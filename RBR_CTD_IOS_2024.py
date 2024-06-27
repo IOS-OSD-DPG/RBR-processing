@@ -140,11 +140,11 @@ def READ_RSK(
         year: str,
         cruise_number: str,
         skipcasts,
+        zoh,
+        fix_spk,
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None,
-        zoh,
-        fix_spk
 ) -> None:
     """
     Formerly EXPORT_MULTIFILES()
