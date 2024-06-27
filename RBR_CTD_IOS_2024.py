@@ -759,7 +759,7 @@ def CREATE_META_DICT(
     return meta_dict
 
 
-def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str) -> None:
+def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: str) -> None:
     """
     Read in a csv file and output in csv format for use in IOSShell
     Filter through the csv and remove un-needed columns.
@@ -772,7 +772,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str) -> None:
     # Add six-line header to the .csv file.
     # This file could be used for data processing via IOSShell
     input_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA.csv"
-    output_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA-6linehdr.csv"
+    output_name = str(year) + "-" + str(cruise_number) + output_ext
     input_filename = os.path.join(dest_dir, input_name)
     ctd_data = pd.read_csv(input_filename, header=0)
 
