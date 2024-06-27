@@ -28,10 +28,11 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 import random
 # from ocean_data_parser.convert.oxygen import O2stoO2c
-from python-o2-conversion-main import O2stoO2c
+from o2conversion import O2stoO2c
 from seawater import eos80
 import pandoc
 import shutil
+#
 # import warnings
 # import itertools
 # from datetime import datetime, timezone
