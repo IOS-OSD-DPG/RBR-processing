@@ -144,7 +144,7 @@ def READ_RSK(
         fix_spk,
         rsk_start_end_times_file=None,
         rsk_time1=None,
-        rsk_time2=None,
+        rsk_time2=None
 ) -> None:
     """
     Formerly EXPORT_MULTIFILES()
