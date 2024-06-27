@@ -142,6 +142,8 @@ def READ_RSK(
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None,
+        zoh,
+        fix_spk
 ) -> None:
     """
     Formerly EXPORT_MULTIFILES()
@@ -224,10 +226,101 @@ def READ_RSK(
         rsk.readdata(t1=rsk_time1, t2=rsk_time2)
         # rsk.data now returns data in a structured array format
 
+        if zoh == False:
+            # at this first stage we are not correcting for zero order holds or spikes
+            if fix_spk == False:
+                print('no corrections being made')
+                # Compute the derived channels
+                rsk.derivesalinity()
+                rsk.deriveseapressure()
+                rsk.derivedepth()
+
+                input_ext = "_CTD_DATA-6linehdr.csv"
+                print('Using original values')
+
+            elif fix_spike == True:
+                print('correcting spikes only')
+                rsk.derivesalinity()
+                rsk.deriveseapressure()
+                rsk.derivedepth()
+                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action="interp")
+                meta_dict['DESPIKE_time'] = datetime.now()
+                meta_dict["Processing_history"] = (
+                    "-Despike Parameters:|"
+                    f"CHANNEL = {spk_var}|"
+                    f" Replace Spikes with {fill_type}|"
+                    " Corrections applied:|"
+                    f" Reference time series produced using a median filter of length {spk_window}:|"
+                    f" Residuals that fall outside {spk_std} standard deviations are replaced:|"
+                )
+                print('despiked')
+
+                input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
+                print('Using values with de-spiked chlorophyll')
+
+
+        elif zoh == True:
+
+            meta_dict["Processing_history"] = (
+                "-Zero-Order Holds Correction:|"
+                f" Correction type = Substitute with {fill_type}|"
+                " Corrections applied:|"
+                " All channels corrected where zero-order holds concur with Pressure Holds:|"
+            )
+            meta_dict["ZEROORDER_Time"] = datetime.now()
+
+            if fix_spk == False:
+                print('correcting hold only')
+
+                # Compute the derived channels
+                rsk.derivesalinity()
+                rsk.deriveseapressure()
+                rsk.derivedepth()
+                # correct the hold with an interpolated value
+                # this function will find all instances and replace them with an interpolated value
+
+                rsk.correcthold(action=fill_action)
+
+                input_ext = "CTD_DATA-6linehdr_corr_hold.csv"
+                print("using zoh correted values")
+
+            elif fix_spk == True:
+
+                meta_dict['DESPIKE_time'] = datetime.now()
+                meta_dict["Processing_history"] += (
+                    "-Despike Parameters:|"
+                    f" CHANNEL = {spk_var}|"
+                    f" Replace Spikes with {fill_type}|"
+                    " Corrections applied:|"
+                    f" Reference time series produced using a median filter of length {spk_window}:|"
+                    f" Residuals that fall outside {spk_std} standard deviations are replaced:|"
+                )
+                # print('despiked')
+
+                input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
+                # print('Using values with de-spiked chlorophyll')
+                # print('correcting hold and spikes')
+                # Compute the derived channels
+                rsk.derivesalinity()
+                rsk.deriveseapressure()
+                rsk.derivedepth()
+
+                rsk.correcthold(action=fill_action)
+
+                # print('zoh corrected')
+                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action=fill_action)
+
+                # print('despiked')
+
+                input_ext = "CTD_DATA-6linehdr_corr_hold_spk.csv"
+
+        else:
+            print('There is a problem')
+
         # Compute the derived channels
-        rsk.derivesalinity()
-        rsk.deriveseapressure()
-        rsk.derivedepth()
+        # rsk.derivesalinity()
+        # rsk.deriveseapressure()
+        # rsk.derivedepth()
         # rsk.deriveO2()  # Derive later
 
         # # Obtain the number of profiles in the rsk file
@@ -334,7 +427,7 @@ def READ_RSK(
 
             # Update counter
             event_number_idx += 1
-    return
+    return input_ext
 
 
 def READ_EXCELrsk(
