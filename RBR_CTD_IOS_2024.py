@@ -145,7 +145,7 @@ def READ_RSK(
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None
-) -> None:
+):
     """
     Formerly EXPORT_MULTIFILES()
     Replace all_last parameter to skipcasts: list-like or int For cases when there
