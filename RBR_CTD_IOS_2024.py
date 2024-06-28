@@ -3218,9 +3218,9 @@ def BINAVE(
         # stop_d = np.round(stop_d)
         new_press_d = np.arange(start_d - 0.5, stop_d + 1.5, interval)
         binned_d = pd.cut(var1[cast_i].Pressure, bins=new_press_d)
-        obs_count_d = var1[cast_i].groupby(binned_d).size()
+        obs_count_d = var1[cast_i].groupby(binned_d, observed=False).size()
 
-        var1[cast_i] = var1[cast_i].groupby(binned_d).mean()
+        var1[cast_i] = var1[cast_i].groupby(binned_d, observed=False).mean()
         var1[cast_i]["Observation_counts"] = obs_count_d
         # Potential for whole row Nan values at top and bottom of output files
         var1[cast_i] = var1[cast_i].dropna(
@@ -3239,6 +3239,9 @@ def BINAVE(
         var2[cast_i]["Observation_counts"] = obs_count_u
         var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
         var2[cast_i].reset_index(drop=True, inplace=True)
+        # Replicate IOS Shell's output Bin Channel = Bin value not average value
+        # might need to change this with round_to_int in HH adcp code.
+        var1[cast_i]['Pressure'] = var1[cast_i]['Pressure'].round(decimals=0)
 
     metadata_dict["Processing_history"] += (
         "-BINAVE parameters:"
