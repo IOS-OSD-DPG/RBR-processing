@@ -3142,6 +3142,58 @@ def plot_delete(cast_d_wakeeffect: dict, cast_d_shift_o: dict, dest_dir: str) ->
 
     return
 
+def DROP_SELECT_VARS(
+        dest_dir: str, var_downcast: dict, drop_vars_file: str, metadata_dict: dict
+) -> dict:
+    """
+    Optional: drop variable(s) from select casts
+    e.g., if oxygen sensor cap left on by accident and the data are useless
+    inputs:
+        - var_downcast: dictionary of downcast data
+        - drop_vars_file: file mapping cast numbers to names of variables to drop
+        - metadata_dict: dictionary containing metadata
+    outputs:
+        - dictionary of downcast data with the selected variables dropped from the
+        selected casts
+    """
+    drop_vars_df = pd.read_csv(
+        os.path.join(dest_dir, drop_vars_file), header=None,
+        names=["cast_number", "vars_to_drop"]
+    )
+
+    var = deepcopy(var_downcast)
+
+    # Iterate through all the casts in the dataframe
+    for i in range(len(drop_vars_df)):
+        # String may be in format "Oxygen, Fluorescence", hence unsplit
+        vars_to_drop_unsplit = drop_vars_df.loc[i, "vars_to_drop"]
+
+        # Skip if there are no vars to drop for the cast
+        if vars_to_drop_unsplit != np.nan:
+            cast_number = drop_vars_df.loc[i, "cast_number"]
+            # Extract the variables to drop from the vars_to_drop column
+            # Need to account for if var names are split by " ", ",", or some combination
+            # e.g., "Oxygen, Fluorescence" vs "oxygen fluorescence" vs " Oxygen," etc.
+            vars_to_drop_split = [
+                v for v in VARIABLES_POSSIBLE if v.lower() in vars_to_drop_unsplit.lower()
+            ]
+            # print(var.columns)
+            var[f"cast{cast_number}"] = var[f"cast{cast_number}"].drop(
+                columns=vars_to_drop_split
+            )
+            # Append a note to the processing history
+            metadata_dict["Processing_history"] += (
+                "-Remove Channels:|"
+                f" The following CHANNEL(S) were removed from cast {cast_number}:|"
+            )
+            for var_to_drop in vars_to_drop_split:
+                metadata_dict["Processing_history"] += f" {var_to_drop}|"
+
+    metadata_dict["DROP_SELECT_VARS_Time"] = datetime.now()
+
+    return var
+
+
 
 def BINAVE(
         var_downcast: dict, var_upcast: dict, metadata_dict: dict, interval=1
@@ -3202,56 +3254,6 @@ def BINAVE(
     return var1, var2
 
 
-def DROP_SELECT_VARS(
-        dest_dir: str, var_downcast: dict, drop_vars_file: str, metadata_dict: dict
-) -> dict:
-    """
-    Optional: drop variable(s) from select casts
-    e.g., if oxygen sensor cap left on by accident and the data are useless
-    inputs:
-        - var_downcast: dictionary of downcast data
-        - drop_vars_file: file mapping cast numbers to names of variables to drop
-        - metadata_dict: dictionary containing metadata
-    outputs:
-        - dictionary of downcast data with the selected variables dropped from the
-        selected casts
-    """
-    drop_vars_df = pd.read_csv(
-        os.path.join(dest_dir, drop_vars_file), header=None,
-        names=["cast_number", "vars_to_drop"]
-    )
-
-    var = deepcopy(var_downcast)
-
-    # Iterate through all the casts in the dataframe
-    for i in range(len(drop_vars_df)):
-        # String may be in format "Oxygen, Fluorescence", hence unsplit
-        vars_to_drop_unsplit = drop_vars_df.loc[i, "vars_to_drop"]
-
-        # Skip if there are no vars to drop for the cast
-        if vars_to_drop_unsplit != np.nan:
-            cast_number = drop_vars_df.loc[i, "cast_number"]
-            # Extract the variables to drop from the vars_to_drop column
-            # Need to account for if var names are split by " ", ",", or some combination
-            # e.g., "Oxygen, Fluorescence" vs "oxygen fluorescence" vs " Oxygen," etc.
-            vars_to_drop_split = [
-                v for v in VARIABLES_POSSIBLE if v.lower() in vars_to_drop_unsplit.lower()
-            ]
-            # print(var.columns)
-            var[f"cast{cast_number}"] = var[f"cast{cast_number}"].drop(
-                columns=vars_to_drop_split
-            )
-            # Append a note to the processing history
-            metadata_dict["Processing_history"] += (
-                "-Remove Channels:|"
-                f" The following CHANNEL(S) were removed from cast {cast_number}:|"
-            )
-            for var_to_drop in vars_to_drop_split:
-                metadata_dict["Processing_history"] += f" {var_to_drop}|"
-
-    metadata_dict["DROP_SELECT_VARS_Time"] = datetime.now()
-
-    return var
 
 
 def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
