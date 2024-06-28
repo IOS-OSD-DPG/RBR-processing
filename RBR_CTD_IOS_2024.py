@@ -3556,7 +3556,7 @@ def write_file(
             "R4",
             2,
         ),
-        "Conductivity": ("Conductivity", "S/m", "%.05f", nan, 10, "F", "R4", 6),
+        "Conductivity": ("Conductivity", "S/m", "%.05f", nan, 10, "F", "R4", 5),
         "Observation_counts": (
             "Number_of_bin_records",
             "n/a",
@@ -3589,7 +3589,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:15}".format(unit)
+                + "{:16}".format(unit) #was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
@@ -3617,7 +3617,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:15}".format(unit)
+                + "{:16}".format(unit) # was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
