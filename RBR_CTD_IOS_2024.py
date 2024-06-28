@@ -140,6 +140,7 @@ def READ_RSK(
         year: str,
         cruise_number: str,
         skipcasts,
+        meta_dict,
         zoh,
         fix_spk,
         fill_action,
@@ -1305,7 +1306,9 @@ def first_corrections(dest_dir,
     #spk_std = 3
     #spk_var = "Fluorescence:URU"
 
-    input_ext = READ_RSK(dest_dir, year, cruise_number, skipcasts,
+    meta_dict = CREATE_META_DICT(dest_dir, rsk_file, year, cruise_number, rsk_time1, rsk_time2)
+
+    input_ext = READ_RSK(dest_dir, year, cruise_number, skipcasts, meta_dict,
                          zoh, fix_spk, fill_action, fill_type, spk_window, spk_std, spk_var,
                          rsk_start_end_times_file, rsk_time1, rsk_time2)
 
