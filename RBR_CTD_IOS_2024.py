@@ -1216,6 +1216,110 @@ def check_for_zoh(
         zoh_correction_needed = False
     return zoh_correction_needed
 
+
+def check_profiles(name1, name2):
+    files = os.listdir(dest_dir)  # list all the files in dest_dir
+    files = list(filter(lambda f: f.endswith(".rsk"), files))  # keep the rsk files only
+    n_files = len(files)  # get the number of files
+
+    # current_profile = event_start
+    header_merge_file = os.path.join(dest_dir, f"{year}-{cruise_number}_header-merge.csv")
+    header_merge_df = pd.read_csv(header_merge_file)
+    # Get event numbers from the header-merge.csv file
+    header_event_no = header_merge_df.loc[:, "LOC:Event Number"].to_numpy()
+    # initialize counter to go through the event numbers in header_merge_df
+    event_number_idx = 0
+
+    for k in range(n_files):
+        print(files[k])
+        # Open the rsk file and read the data within it
+        filename = os.path.join(
+            str(dest_dir), str(files[k])
+        )  # full path and name of .rsk file
+        # readHiddenChannels=True does not reveal the derived variables
+        rsk = pyrsktools.RSK(filename, readHiddenChannels=False)  # load up an RSK
+        rsk.open()
+        rsk.readdata()
+
+        # Compute the derived channels so as to make number of channels accurate
+        rsk.derivesalinity()
+        rsk.deriveseapressure()
+        rsk.derivedepth()
+
+        downcastIndices = rsk.getprofilesindices(direction="down")
+        for i in range(0, len(downcastIndices)):
+            # for i in range(skipcasts[k],len(downcastIndices)):
+            fig, axes = rsk.plotprofiles(
+                channels=["conductivity", "temperature", "chlorophyll_a", "salinity", 'dissolved_o2_saturation'],
+                profiles=i,
+                direction="down",
+            )
+            plot_name = f"{name1}Plot_cast_{str(header_event_no[event_number_idx])}_rsk.png"
+            plt.savefig(os.path.join(dest_dir + "FIG\\" + plot_name))
+            plt.show()
+            plt.close()
+            event_number_idx += 1
+
+def first_corrections():
+    """a function to make corrections to the original rsk file for zoh and despiking"""
+
+    spk_input = input('Is despiking needed? True or False')
+    if spk_input == 'True':
+        spk_input = True
+    elif spk_input == 'False':
+        spk_input = False
+    else:
+        print('spike input is incorrect')
+
+    zoh_input = input('Is zoh correction needed? True or False')
+
+    if zoh_input == 'True':
+        zoh_input = True
+    elif zoh_input == 'False':
+        zoh_input = False
+    else:
+        print('zoh input is incorrect')
+
+    fix_spk = spk_input
+    zoh = zoh_input
+
+    fill_action = "interp"
+    fill_type = "interpolated value"
+    spk_window = 11
+    spk_std = 3
+    spk_var = "Fluorescence:URU"
+
+    input_ext = READ_RSK(dest_dir, year, cruise_number, skipcasts,
+                         zoh=zoh, fix_spk=fix_spk,
+                         rsk_start_end_times_file, rsk_time1, rsk_time2)
+
+    if zoh:
+
+        MERGE_FILES(dest_dir, year, cruise_number)
+        ADD_6LINEHEADER_2(dest_dir, year, cruise_number, output_ext=input_ext)
+        PLOT_PRESSURE_DIFF(dest_dir, year, cruise_number, input_ext)
+
+        if verbose:
+            if fix_spk == True:
+                print("Using despiked and zero-order holds corrected variables")
+            elif fix_spk == False:
+                print("Using zero-order holds corrected variables")
+
+
+    else:
+        if fix_spk=True:
+            MERGE_FILES(dest_dir, year, cruise_number)
+            ADD_6LINEHEADER_2(dest_dir, year, cruise_number, output_ext=input_ext)
+            PLOT_PRESSURE_DIFF(dest_dir, year, cruise_number, input_ext)
+            print('using despiked fluorescence')
+        elif fix_spk == False:
+
+            print("using original variables")
+
+first_corrections()
+
+
+
 def CREATE_CAST_VARIABLES(
         year: str, cruise_number: str, dest_dir: str, input_ext: str
 ) -> tuple:
