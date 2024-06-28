@@ -4085,6 +4085,19 @@ def write_comments(
     print("       " + "No calibration sampling was available.")
     print()
     # print("       " + "For details on the processing see document: " + cruise_ID + "RBR_Processing_Report.doc.")
+    # add processing comments if needed, see notes in parameters in Jupyter notebook about format
+    if processing_comments1 is not None:
+        print(processing_comments1)
+    if processing_comments2 is not None:
+        print(processing_comments2)
+        print()
+    if processing_comments3 is not None:
+        print(processing_comments3)
+    if processing_comments4 is not None:
+        print(processing_comments4)
+    if processing_comments5 is not None:
+        print(processing_comments5)
+        print()
     print(
         "       "
         + "For details on the processing see document: "
