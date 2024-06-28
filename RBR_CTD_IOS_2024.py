@@ -1260,7 +1260,7 @@ def check_profiles(name1, name2):
             plt.close()
             event_number_idx += 1
 
-def first_corrections():
+def first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2):
     """a function to make corrections to the original rsk file for zoh and despiking"""
 
     spk_input = input('Is despiking needed? True or False')
@@ -1290,7 +1290,7 @@ def first_corrections():
     spk_var = "Fluorescence:URU"
 
     input_ext = READ_RSK(dest_dir, year, cruise_number, skipcasts,
-                         zoh=zoh, fix_spk=fix_spk,
+                         zoh, fix_spk,
                          rsk_start_end_times_file, rsk_time1, rsk_time2)
 
     if zoh:
@@ -1300,26 +1300,25 @@ def first_corrections():
         PLOT_PRESSURE_DIFF(dest_dir, year, cruise_number, input_ext)
 
         if verbose:
-            if fix_spk == True:
+            if fix_spk:
                 print("Using despiked and zero-order holds corrected variables")
-            elif fix_spk == False:
+            elif not fix_spk:
                 print("Using zero-order holds corrected variables")
 
-
     else:
-        if fix_spk=True:
+        if fix_spk:
             MERGE_FILES(dest_dir, year, cruise_number)
             ADD_6LINEHEADER_2(dest_dir, year, cruise_number, output_ext=input_ext)
             PLOT_PRESSURE_DIFF(dest_dir, year, cruise_number, input_ext)
             print('using despiked fluorescence')
-        elif fix_spk == False:
+        elif not fix_spk:
 
             print("using original variables")
 
     return input_ext
 
-first_corrections()
 
+first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2)
 
 
 def CREATE_CAST_VARIABLES(
