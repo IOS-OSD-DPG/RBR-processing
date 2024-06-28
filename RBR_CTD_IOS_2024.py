@@ -3846,7 +3846,7 @@ def write_history(
     print("    !   Name     Vers   Date       Time     Recs In   Recs Out")
     print("    !   -------- ------ ---------- -------- --------- ---------")
     print(
-        "        Z ORDER  "
+        "        Z_ORDER  "
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["ZEROORDER_Time"].strftime(time_format)[0:-7].split(" ")[0]
@@ -3857,6 +3857,20 @@ def write_history(
         + "{:>9}".format(str(cast_original["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_original["cast" + str(cast_number)].shape[0]))
     )
+
+    if "DESPIKE_time" in metadata_dict.keys():
+        print(
+            "        DESPIKE  "
+            + "{:7}".format(str(1.0))
+            + "{:11}".format(
+                metadata_dict["DESPIKE_time"].strftime(time_format)[0:-7].split(" ")[0]
+            )
+            + "{:9}".format(
+                metadata_dict["DESPIKE_time"].strftime(time_format)[0:-7].split(" ")[1]
+            )
+            + "{:>9}".format(str(cast_original["cast" + str(cast_number)].shape[0]))
+            + "{:>10}".format(str(cast_correct_time["cast" + str(cast_number)].shape[0]))
+        )
     if "CORRECT_TIME_OFFSET_Time" in metadata_dict.keys():
         print(
             "        CORRECT_T"
@@ -3870,6 +3884,7 @@ def write_history(
             + "{:>9}".format(str(cast_original["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(str(cast_correct_time["cast" + str(cast_number)].shape[0]))
         )
+
     if "CALIB_Time" in metadata_dict.keys():
         print(
             "        CALIB    "
@@ -3983,23 +3998,7 @@ def write_history(
             )
         )
     )
-    print(
-        "        BINAVE   "
-        + "{:7}".format(str(1.0))
-        + "{:11}".format(
-            metadata_dict["BINAVE_Time"].strftime(time_format)[0:-7].split(" ")[0]
-        )
-        + "{:9}".format(
-            metadata_dict["BINAVE_Time"].strftime(time_format)[0:-7].split(" ")[1]
-        )
-        + "{:>9}".format(
-            str(
-                cast_wakeeffect["cast" + str(cast_number)].shape[0]
-                - list(cast_wakeeffect["cast" + str(cast_number)].isna().sum())[0]
-            )
-        )
-        + "{:>10}".format(str(cast_binned["cast" + str(cast_number)].shape[0]))
-    )
+
     if "DROP_SELECT_VARS_Time" in metadata_dict.keys():
         print(
             "        DROP_SLCT"
@@ -4022,6 +4021,25 @@ def write_history(
                 )
             )
         )
+
+    print(
+        "        BINAVE   "
+        + "{:7}".format(str(1.0))
+        + "{:11}".format(
+            metadata_dict["BINAVE_Time"].strftime(time_format)[0:-7].split(" ")[0]
+        )
+        + "{:9}".format(
+            metadata_dict["BINAVE_Time"].strftime(time_format)[0:-7].split(" ")[1]
+        )
+        + "{:>9}".format(
+            str(
+                cast_wakeeffect["cast" + str(cast_number)].shape[0]
+                - list(cast_dropvars["cast" + str(cast_number)].isna().sum())[0]
+            )
+        )
+        + "{:>10}".format(str(cast_binned["cast" + str(cast_number)].shape[0]))
+    )
+
     print(
         "        EDIT     "
         + "{:7}".format(str(1.0))
@@ -4031,7 +4049,7 @@ def write_history(
         + "{:9}".format(
             metadata_dict["FINALEDIT_Time"].strftime(time_format)[0:-7].split(" ")[1]
         )
-        + "{:>9}".format(str(cast_dropvars["cast" + str(cast_number)].shape[0]))
+        + "{:>9}".format(str(cast_binned["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_final["cast" + str(cast_number)].shape[0]))
     )
 
