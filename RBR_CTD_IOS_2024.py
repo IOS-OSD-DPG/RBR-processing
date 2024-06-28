@@ -3358,7 +3358,8 @@ def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
             column_order.append("Oxygen_mL_L")
             column_order.append("Oxygen_umol_kg")
         if "Conductivity" in var[cast_i].columns:
-            var[cast_i].Conductivity = var[cast_i].Conductivity.apply("{:,.6f}".format)
+            # Conductivity S/m changed from 6 to 5 decimals in 2023 by GG
+            var[cast_i].Conductivity = var[cast_i].Conductivity.apply("{:,.5f}".format)
             column_order.append("Conductivity")
 
         column_order.append("Observation_counts")
