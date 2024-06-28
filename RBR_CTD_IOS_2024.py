@@ -1163,6 +1163,58 @@ def PLOT_PRESSURE_DIFF(dest_dir: str, year: str, cruise_number: str, input_ext: 
     plt.close(fig)
     return
 
+def check_for_zoh(
+        dest_dir, year: str, cruise_number: str, sampling_interval: float
+) -> bool:
+    """
+    Compute first order differences on pressure data to determine whether
+    a correction for zero-order holds is needed.
+    From DFO Technical Report 314:
+    'The analog-to-digital (A2D) converter on RBR instruments must recalibrate once per
+    minute.'
+    inputs
+        - dest_dir: destination/working directory
+        - year
+        - cruise_number
+        - sampling_interval: amount of time in seconds between records
+    outputs
+        - boolean flag indicating whether zero-order holds are present in the data
+    """
+
+    input_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA-6linehdr.csv"
+    input_filename = dest_dir + input_name
+    ctd_data = pd.read_csv(input_filename, header=None, low_memory=False)
+    # assign the second row as column names
+    ctd_data = ctd_data.rename(columns=ctd_data.iloc[1])
+    ctd_data = ctd_data.rename(
+        columns={
+            "Oxygen:Dissolved:Saturation": "Oxygen",
+            "Salinity:CTD": "Salinity",
+            "TIME:UTC": "TIME",
+        }
+    )
+    ctd = ctd_data.iloc[6:]
+    ctd.index = np.arange(0, len(ctd))
+
+    pressure = ctd["Pressure"].apply(pd.to_numeric)
+    pressure_diffs = np.diff(pressure)
+
+    print("Number of pressure records:", len(pressure))
+    print("Sum of zero pressure differences:", sum(pressure_diffs == 0))
+    print(
+        "Intervals between zero pressure differences:",
+        np.diff(np.where(pressure_diffs == 0)[0]),
+        sep="\n",
+    )
+
+    sec2min = 1 / 60  # Convert seconds to minutes b/c sampling interval in seconds
+    if sum(pressure_diffs == 0) >= np.floor(
+            len(pressure) * sampling_interval * sec2min
+    ):
+        zoh_correction_needed = True
+    else:
+        zoh_correction_needed = False
+    return zoh_correction_needed
 
 def CREATE_CAST_VARIABLES(
         year: str, cruise_number: str, dest_dir: str, input_ext: str
@@ -1802,58 +1854,7 @@ def first_plots(year: str, cruise_number: str, dest_dir: str, input_ext: str) ->
     return
 
 
-def check_for_zoh(
-        dest_dir, year: str, cruise_number: str, sampling_interval: float
-) -> bool:
-    """
-    Compute first order differences on pressure data to determine whether
-    a correction for zero-order holds is needed.
-    From DFO Technical Report 314:
-    'The analog-to-digital (A2D) converter on RBR instruments must recalibrate once per
-    minute.'
-    inputs
-        - dest_dir: destination/working directory
-        - year
-        - cruise_number
-        - sampling_interval: amount of time in seconds between records
-    outputs
-        - boolean flag indicating whether zero-order holds are present in the data
-    """
 
-    input_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA-6linehdr.csv"
-    input_filename = dest_dir + input_name
-    ctd_data = pd.read_csv(input_filename, header=None, low_memory=False)
-    # assign the second row as column names
-    ctd_data = ctd_data.rename(columns=ctd_data.iloc[1])
-    ctd_data = ctd_data.rename(
-        columns={
-            "Oxygen:Dissolved:Saturation": "Oxygen",
-            "Salinity:CTD": "Salinity",
-            "TIME:UTC": "TIME",
-        }
-    )
-    ctd = ctd_data.iloc[6:]
-    ctd.index = np.arange(0, len(ctd))
-
-    pressure = ctd["Pressure"].apply(pd.to_numeric)
-    pressure_diffs = np.diff(pressure)
-
-    print("Number of pressure records:", len(pressure))
-    print("Sum of zero pressure differences:", sum(pressure_diffs == 0))
-    print(
-        "Intervals between zero pressure differences:",
-        np.diff(np.where(pressure_diffs == 0)[0]),
-        sep="\n",
-    )
-
-    sec2min = 1 / 60  # Convert seconds to minutes b/c sampling interval in seconds
-    if sum(pressure_diffs == 0) >= np.floor(
-            len(pressure) * sampling_interval * sec2min
-    ):
-        zoh_correction_needed = True
-    else:
-        zoh_correction_needed = False
-    return zoh_correction_needed
 
 
 def CORRECT_HOLD(
