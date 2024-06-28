@@ -142,6 +142,11 @@ def READ_RSK(
         skipcasts,
         zoh,
         fix_spk,
+        fill_action,
+        fill_type,
+        spk_window,
+        spk_std,
+        spk_var,
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None
@@ -1260,7 +1265,18 @@ def check_profiles(dest_dir, year, cruise_number, name1, name2):
             plt.close()
             event_number_idx += 1
 
-def first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2):
+def first_corrections(dest_dir,
+                      year,
+                      cruise_number,
+                      skipcasts,
+                      fill_action,
+                      fill_type,
+                      spk_window,
+                      spk_std,
+                      spk_var,
+                      rsk_start_end_times_file,
+                      rsk_time1,
+                      rsk_time2):
     """a function to make corrections to the original rsk file for zoh and despiking"""
 
     spk_input = input('Is despiking needed? True or False')
@@ -1283,14 +1299,14 @@ def first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_ti
     fix_spk = spk_input
     zoh = zoh_input
 
-    fill_action = "interp"
-    fill_type = "interpolated value"
-    spk_window = 11
-    spk_std = 3
-    spk_var = "Fluorescence:URU"
+    #fill_action = "interp"
+    #fill_type = "interpolated value"
+    #spk_window = 11
+    #spk_std = 3
+    #spk_var = "Fluorescence:URU"
 
     input_ext = READ_RSK(dest_dir, year, cruise_number, skipcasts,
-                         zoh, fix_spk,
+                         zoh, fix_spk, fill_action, fill_type, spk_window, spk_std, spk_var,
                          rsk_start_end_times_file, rsk_time1, rsk_time2)
 
     if zoh:
