@@ -1051,6 +1051,7 @@ def plot_track_location(
     header["lon_min"] = header["LOC:LONGITUDE"].str[4:12].astype(float)
     header["lon"] = 0 - (header["lon_degree"] + header["lon_min"] / 60)
     # event = header['LOC:STATION'].astype(str)
+    project_name = header["ADM:Project"][0]
 
     lon = header["lon"].tolist()
     lat = header["lat"].tolist()
@@ -1075,7 +1076,7 @@ def plot_track_location(
         urcrnrlon=right_lon,
         urcrnrlat=top_lat,
         projection="lcc",
-        resolution="h",
+        resolution="i",
         lat_0=0.5 * (bot_lat + top_lat),
         lon_0=0.5 * (left_lon + right_lon),
     )  # lat_0=53.4, lon_0=-129.0)
@@ -1099,47 +1100,14 @@ def plot_track_location(
     )  # draw parallel lat lines
     meridians = np.arange(left_lon, right_lon, 0.5)
     m.drawmeridians(meridians, labels=[False, False, False, True])
-    plt.title(year + "-" + cruise_number)
+    plt.title(year + "-" + cruise_number + " " + project_name)
     plt.tight_layout()
     plt.savefig(
         os.path.join(figure_dir, f"{year}-{cruise_number}_basemap_sampling_area.png")
     )  # 'Fig_1.png'
     plt.close(fig)
 
-    # ----- create a second map w/ Cartopy just to double check - had an issue with Basemap once only
 
-    Map = plt.axes(projection=ccrs.PlateCarree())
-    Map.set_extent(
-        [left_lon, right_lon, bot_lat, top_lat]
-    )  # try left_lon, right_lon, bot_lat, top_lat
-    x, y = (lon, lat)
-    Map.coastlines()
-    gl = Map.gridlines(
-        crs=ccrs.PlateCarree(),
-        linewidth=0.5,
-        color="black",
-        alpha=0.5,
-        linestyle="--",
-        draw_labels=True,
-    )
-    gl.top_labels = False
-    gl.left_labels = True
-    gl.bottom_labels = True
-    gl.right_labels = False
-    gl.ylocator = LatitudeLocator()
-    gl.xformatter = LongitudeFormatter()
-    gl.yformatter = LatitudeFormatter()
-
-    gl.xlabel_style = {"color": "black", "weight": "bold", "size": 6}
-    gl.ylabel_style = {"color": "black", "weight": "bold", "size": 6}
-
-    cax = plt.scatter(x, y, transform=ccrs.PlateCarree(), marker=".", color="red", s=25)
-    plt.title(year + "-" + cruise_number)
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(figure_dir, f"{year}-{cruise_number}_cartopy_sampling_area.png")
-    )  # 'Figure_1.png'
-    plt.close()
     return
 
 
