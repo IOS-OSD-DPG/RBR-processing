@@ -1217,7 +1217,7 @@ def check_for_zoh(
     return zoh_correction_needed
 
 
-def check_profiles(name1, name2):
+def check_profiles(dest_dir, year, cruise_number, name1, name2):
     files = os.listdir(dest_dir)  # list all the files in dest_dir
     files = list(filter(lambda f: f.endswith(".rsk"), files))  # keep the rsk files only
     n_files = len(files)  # get the number of files
@@ -1318,7 +1318,7 @@ def first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_ti
     return input_ext
 
 
-first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2)
+#first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2)
 
 
 def CREATE_CAST_VARIABLES(
