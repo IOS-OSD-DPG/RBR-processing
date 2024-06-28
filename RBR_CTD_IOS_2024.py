@@ -232,9 +232,9 @@ def READ_RSK(
         rsk.readdata(t1=rsk_time1, t2=rsk_time2)
         # rsk.data now returns data in a structured array format
 
-        if zoh == False:
+        if not zoh:
             # at this first stage we are not correcting for zero order holds or spikes
-            if fix_spk == False:
+            if not fix_spk:
                 print('no corrections being made')
                 # Compute the derived channels
                 rsk.derivesalinity()
@@ -244,12 +244,12 @@ def READ_RSK(
                 input_ext = "_CTD_DATA-6linehdr.csv"
                 print('Using original values')
 
-            elif fix_spike == True:
+            elif fix_spk:
                 print('correcting spikes only')
                 rsk.derivesalinity()
                 rsk.deriveseapressure()
                 rsk.derivedepth()
-                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action="interp")
+                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action=fill_action)
                 meta_dict['DESPIKE_time'] = datetime.now()
                 meta_dict["Processing_history"] = (
                     "-Despike Parameters:|"
@@ -265,7 +265,7 @@ def READ_RSK(
                 print('Using values with de-spiked chlorophyll')
 
 
-        elif zoh == True:
+        elif zoh:
 
             meta_dict["Processing_history"] = (
                 "-Zero-Order Holds Correction:|"
@@ -275,7 +275,7 @@ def READ_RSK(
             )
             meta_dict["ZEROORDER_Time"] = datetime.now()
 
-            if fix_spk == False:
+            if not fix_spk:
                 print('correcting hold only')
 
                 # Compute the derived channels
@@ -290,7 +290,7 @@ def READ_RSK(
                 input_ext = "CTD_DATA-6linehdr_corr_hold.csv"
                 print("using zoh correted values")
 
-            elif fix_spk == True:
+            elif fix_spk:
 
                 meta_dict['DESPIKE_time'] = datetime.now()
                 meta_dict["Processing_history"] += (
