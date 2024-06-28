@@ -1316,6 +1316,8 @@ def first_corrections():
 
             print("using original variables")
 
+    return input_ext
+
 first_corrections()
 
 
