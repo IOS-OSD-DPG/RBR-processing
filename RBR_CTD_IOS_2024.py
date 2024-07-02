@@ -4453,7 +4453,7 @@ def write_data(
 def main_header(
         dest_dir: str,
         n_cast: int,
-        metadata_dict: dict,
+        meta_dict: dict,
         cast: dict,
         cast_d: dict,
         cast_d_correct_t: dict,
@@ -4518,10 +4518,10 @@ def main_header(
         print("*" + dt_string)
         print(IOS_string)
         print()  # print("\n") pring("\n" * 40)
-        write_file(n_cast, cast, cast_d_final, metadata_dict)
-        write_admin(metadata_dict=metadata_dict)
-        write_location(cast_number=n_cast, metadata_dict=metadata_dict)
-        write_instrument(metadata_dict=metadata_dict)
+        write_file(n_cast, cast, cast_d_final, meta_dict)
+        write_admin(metadata_dict=meta_dict)
+        write_location(cast_number=n_cast, metadata_dict=meta_dict)
+        write_instrument(metadata_dict=meta_dict)
         write_history(
             cast_d,
             cast_d_correct_t,
@@ -4536,7 +4536,7 @@ def main_header(
             cast_d_dropvars,
             cast_d_final,
             cast_number=n_cast,
-            metadata_dict=metadata_dict,
+            metadata_dict=meta_dict,
         )
         write_comments(
             processing_report_name, channel_names
