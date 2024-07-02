@@ -3762,10 +3762,10 @@ def write_location(cast_number: int, metadata_dict: dict) -> None:
     lat[0] = f"  {lat[0]}"[-3:]
     lon[0] = f"  {lon[0]}"[-3:]
     # Remove filler zero from minutes part of coordinates
-    if lat[1][0] == "0":
-        lat[1] = lat[1][1:]
-    if lon[1][0] == "0":
-        lon[1] = lon[1][1:]
+    if lat[2][0] == "0":  # might be lat[1][0]
+        lat[2] = lat[2][1:]  # might be lat[1]=lat[1][1:]
+    if lon[2][0] == "0":  # might be 1 as above
+        lon[2] = lon[2][1:]  # might be 1 as above
 
     print("*LOCATION")
     # print("    " + '{:20}'.format('STATION') + ": " + str(station_number[cast_number - 1]))
@@ -3783,9 +3783,9 @@ def write_location(cast_number: int, metadata_dict: dict) -> None:
         + ": "
         + lat[0]
         + " "
-        + lat[1]
+        + lat[2]  # might be 1
         + "0 "
-        + lat[2]
+        + lat[3]  # might be 2
         + "  ! (deg min)"
     )
     print(
@@ -3794,9 +3794,9 @@ def write_location(cast_number: int, metadata_dict: dict) -> None:
         + ": "
         + lon[0]
         + " "
-        + lon[1]
+        + lon[2]  # might be 1
         + "0 "
-        + lon[2]
+        + lon[3]  # might be 2
         + "  ! (deg min)"
     )
     print("    " + "{:20}".format("WATER DEPTH") + ": " + water_depth)
