@@ -4035,7 +4035,7 @@ def write_history(
 
     if "DROP_SELECT_VARS_Time" in metadata_dict.keys():
         print(
-            "        DROP_SLCT"
+            "        DROP_SEL"
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
@@ -4047,7 +4047,7 @@ def write_history(
                     .strftime(time_format)[0:-7]
                     .split(" ")[1]
             )
-            + "{:>9}".format(str(cast_binned["cast" + str(cast_number)].shape[0]))
+            + "{:>9}".format(str(cast_wakeeffect["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(
                 str(
                     cast_dropvars["cast" + str(cast_number)].shape[0]
@@ -4099,7 +4099,10 @@ def write_history(
 
 
 def write_comments(
-        processing_report_name: str, channel_names   # have_fluor: bool, have_oxy: bool,
+        processing_report_name: str, channel_names,
+        processing_comments1, processing_comments2,
+        processing_comments3, processing_comments4,
+        processing_comments5# have_fluor: bool, have_oxy: bool,
 ) -> None:
     """Write comments section in the IOS header file
     inputs:
@@ -4469,6 +4472,11 @@ def main_header(
         cast_d_final: dict,
         channel_names,
         processing_report_name: str,
+        processing_comments1,
+        processing_comments2,
+        processing_comments3,
+        processing_comments4,
+        processing_comments5
 ) -> str:
     """
     Main function for creating an IOS header file containing final processed RBR CTD data
@@ -4539,7 +4547,8 @@ def main_header(
             metadata_dict=meta_dict,
         )
         write_comments(
-            processing_report_name, channel_names
+            processing_report_name, channel_names, processing_comments1, processing_comments2,
+            processing_comments3, processing_comments4, processing_comments5
         )  # , metadata_dict=meta_data, cast_d=cast_d) have_fluor, have_oxy,
         write_data(
             cast_d_final, cast_number=n_cast, channel_names=channel_names
