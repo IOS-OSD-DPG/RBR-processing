@@ -3747,7 +3747,7 @@ def write_location(cast_number: int, metadata_dict: dict) -> None:
     event_number = metadata_dict["Location"]["LOC:Event Number"].to_numpy()
     lon = metadata_dict["Location"]["LOC:LONGITUDE"].to_numpy()
     lat = metadata_dict["Location"]["LOC:LATITUDE"].to_numpy()
-    water_depth = metadata_dict["Location"]["LOC:Water Depth"].to_numpy()
+    water_depth = metadata_dict["Location"]["LOC:WATER DEPTH"].to_numpy()
 
     event_mask = event_number == cast_number
 
