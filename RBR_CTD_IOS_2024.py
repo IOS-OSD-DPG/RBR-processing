@@ -3195,8 +3195,21 @@ def DROP_SELECT_VARS(
             # Extract the variables to drop from the vars_to_drop column
             # Need to account for if var names are split by " ", ",", or some combination
             # e.g., "Oxygen, Fluorescence" vs "oxygen fluorescence" vs " Oxygen," etc.
+            # SH change, we are dropping more than what is in VARIABLES_POSSIBLE
+            # Make a new list
+            VARS_POSS = ["Salinity",
+                         "Temperature",
+                         "Conductivity",
+                         "Oxygen",
+                         "Fluorescence",
+                         "Oxygen_mL_L",
+                         "Oxygen_umol_kg",
+                         "Cast_direction",
+                         "Event_number",
+                         "Date",
+                         "TIME"]
             vars_to_drop_split = [
-                v for v in VARIABLES_POSSIBLE if v.lower() in vars_to_drop_unsplit.lower()
+                v for v in VARS_POSS if v.lower() in vars_to_drop_unsplit.lower()
             ]
             # print(var.columns)
             var[f"cast{cast_number}"] = var[f"cast{cast_number}"].drop(
