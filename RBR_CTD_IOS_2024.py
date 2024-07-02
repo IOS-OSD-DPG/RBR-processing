@@ -848,7 +848,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     # ctd_data.reset_index(drop=True, inplace=True)
 
     col_list = ctd_data.columns.tolist()
-    print(col_list)
+    # print(col_list)
 
     # set empty column names
     # dict.fromkeys(ctd_data.columns, np.arange(len(ctd_data.columns)))
@@ -1111,6 +1111,7 @@ def plot_track_location(
     plt.savefig(
         os.path.join(figure_dir, f"{year}-{cruise_number}_basemap_sampling_area.png")
     )  # 'Fig_1.png'
+    plt.show()
     plt.close(fig)
 
 
@@ -1166,6 +1167,7 @@ def PLOT_PRESSURE_DIFF(dest_dir: str, year: str, cruise_number: str, input_ext: 
     plt.title(year + "-" + cruise_number + " " + input_ext)
     plt.tight_layout()
     plt.savefig(os.path.join(figure_dir, "zero_order_holds_" + input_ext + ".png"))
+    plt.show()
     plt.close(fig)
     return
 
@@ -1207,11 +1209,12 @@ def check_for_zoh(
 
     print("Number of pressure records:", len(pressure))
     print("Sum of zero pressure differences:", sum(pressure_diffs == 0))
-    print(
-        "Intervals between zero pressure differences:",
-        np.diff(np.where(pressure_diffs == 0)[0]),
-        sep="\n",
-    )
+    # decided not to show this
+    #print(
+    #    "Intervals between zero pressure differences:",
+    #    np.diff(np.where(pressure_diffs == 0)[0]),
+    #    sep="\n",
+    #)
 
     sec2min = 1 / 60  # Convert seconds to minutes b/c sampling interval in seconds
     if sum(pressure_diffs == 0) >= np.floor(
