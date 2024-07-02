@@ -4035,7 +4035,7 @@ def write_history(
 
     if "DROP_SELECT_VARS_Time" in metadata_dict.keys():
         print(
-            "        DROP_SEL"
+            "        DROP_SEL "
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
@@ -4134,7 +4134,7 @@ def write_comments(
         print(processing_comments4)
     if processing_comments5 is not None:
         print(processing_comments5)
-        print()
+    print()
     print(
         "       "
         + "For details on the processing see document: "
@@ -4176,7 +4176,7 @@ def write_comments(
                                    "        ",
                                    "        ",
                                    "------- "],
-                  "Oxygen": ["---*--- "
+                  "Oxygen": ["---*--- ",
                              "Oxygen: ",
                              "Dissolv ",
                              "ed:     ",
