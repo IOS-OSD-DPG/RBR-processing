@@ -3217,8 +3217,8 @@ def DROP_SELECT_VARS(
 
 
 def BINAVE(
-        var_downcast: dict, var_upcast: dict, metadata_dict: dict, interval=1
-) -> tuple:
+        var_downcast: dict,  metadata_dict: dict, interval=1
+) : # removing the upcast from this function var_upcast: dict,
     """
     Bin average the profiles
     Note: Bin width and spacing are both universally chosen to be 1m in coastal waters
@@ -3230,7 +3230,7 @@ def BINAVE(
     """
     # cast_number = len(var_downcast.keys())
     var1 = deepcopy(var_downcast)
-    var2 = deepcopy(var_upcast)
+    #var2 = deepcopy(var_upcast)
     # Iterate through all the casts
     for cast_i in var1.keys():
         start_d = np.floor(np.nanmin(var1[cast_i].Pressure.values))
@@ -3249,17 +3249,17 @@ def BINAVE(
         )  # drop the nans - ask if this is OK?
         var1[cast_i].reset_index(drop=True, inplace=True)
 
-        start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
-        stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
-        new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
-        binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
-        obs_count_u = var2[cast_i].groupby(binned_u).size()
+        #start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
+        #stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
+        #new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
+        #binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
+        #obs_count_u = var2[cast_i].groupby(binned_u).size()
 
-        var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
-        var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
-        var2[cast_i]["Observation_counts"] = obs_count_u
-        var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
-        var2[cast_i].reset_index(drop=True, inplace=True)
+        #var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
+        #var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
+        #var2[cast_i]["Observation_counts"] = obs_count_u
+        #var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
+        #var2[cast_i].reset_index(drop=True, inplace=True)
         # Replicate IOS Shell's output Bin Channel = Bin value not average value
         # might need to change this with round_to_int in HH adcp code.
         var1[cast_i]['Pressure'] = var1[cast_i]['Pressure'].round(decimals=0)
@@ -3275,7 +3275,7 @@ def BINAVE(
     )
     metadata_dict["BINAVE_Time"] = datetime.now()
 
-    return var1, var2
+    return var1
 
 
 
