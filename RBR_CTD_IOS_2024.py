@@ -1996,9 +1996,6 @@ def first_plots(year: str, cruise_number: str, dest_dir: str, input_ext: str) ->
     return
 
 
-
-
-
 def CORRECT_HOLD(
         dest_dir: str, year: str, cruise_number: str, metadata_dict: dict, fill_type: str
 ) -> None:
@@ -3304,8 +3301,6 @@ def BINAVE(
     metadata_dict["BINAVE_Time"] = datetime.now()
 
     return var1
-
-
 
 
 def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
