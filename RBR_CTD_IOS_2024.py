@@ -1355,9 +1355,6 @@ def first_corrections(dest_dir,
     return input_ext
 
 
-#first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2)
-
-
 def CREATE_CAST_VARIABLES(
         year: str, cruise_number: str, dest_dir: str, input_ext: str
 ) -> tuple:
@@ -2438,28 +2435,6 @@ def plot_clip(cast_d_clip: dict, cast_d_pc: dict, dest_dir: str) -> None:
     plt.savefig(os.path.join(figure_dir, "After_Clip_P_vs_t.png"))
     plt.close(fig)
 
-    # # plot all cast together
-    #
-    # number_of_colors = len(cast)
-    # color = ["#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)])
-    #          for i in range(number_of_colors)]
-    #
-    # fig, ax = plt.subplots()
-    # for i in range(0, len(cast), 1):
-    #     ax.plot(cast_d_clip['cast' + str(i + 1)].TIME,
-    #             cast_d_clip['cast' + str(i + 1)].Pressure, color=color[i],
-    #             label='cast' + str(i + 1))
-    #     # ax.plot(cast_u['cast' + str(i+1)].Salinity, cast_u['cast' + str(i+1)].Pressure, '--', color=color[i],
-    #     #         label= 'cast' + str(i+1))
-    # # ax.plot(cast_d['cast1'].Salinity, cast_d['cast1'].Pressure, color='blue', label='cast1')
-    # # ax.plot(cast_u['cast1'].Salinity, cast_u['cast1'].Pressure, '--', color='blue', label='cast1')
-    # ax.invert_yaxis()
-    # ax.xaxis.set_label_position('top')
-    # ax.xaxis.set_ticks_position('top')
-    # ax.set_xlabel('Time')
-    # ax.set_ylabel('Pressure (decibar)')
-    # ax.set_title('After Clip')
-    # ax.legend()
     return
 
 
@@ -3240,10 +3215,9 @@ def DROP_SELECT_VARS(
     return var
 
 
-
 def BINAVE(
-        var_downcast: dict,  metadata_dict: dict, interval=1
-) : # removing the upcast from this function var_upcast: dict,
+        var_downcast: dict, metadata_dict: dict, interval=1
+):  # removing the upcast from this function var_upcast: dict,
     """
     Bin average the profiles
     Note: Bin width and spacing are both universally chosen to be 1m in coastal waters
@@ -3255,7 +3229,7 @@ def BINAVE(
     """
     # cast_number = len(var_downcast.keys())
     var1 = deepcopy(var_downcast)
-    #var2 = deepcopy(var_upcast)
+    # var2 = deepcopy(var_upcast)
     # Iterate through all the casts
     for cast_i in var1.keys():
         start_d = np.floor(np.nanmin(var1[cast_i].Pressure.values))
@@ -3274,17 +3248,17 @@ def BINAVE(
         )  # drop the nans - ask if this is OK?
         var1[cast_i].reset_index(drop=True, inplace=True)
 
-        #start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
-        #stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
-        #new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
-        #binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
-        #obs_count_u = var2[cast_i].groupby(binned_u).size()
+        # start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
+        # stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
+        # new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
+        # binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
+        # obs_count_u = var2[cast_i].groupby(binned_u).size()
 
-        #var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
-        #var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
-        #var2[cast_i]["Observation_counts"] = obs_count_u
-        #var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
-        #var2[cast_i].reset_index(drop=True, inplace=True)
+        # var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
+        # var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
+        # var2[cast_i]["Observation_counts"] = obs_count_u
+        # var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
+        # var2[cast_i].reset_index(drop=True, inplace=True)
         # Replicate IOS Shell's output Bin Channel = Bin value not average value
         # might need to change this with round_to_int in HH adcp code.
         var1[cast_i]['Pressure'] = var1[cast_i]['Pressure'].round(decimals=0)
@@ -3315,51 +3289,6 @@ def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
     # vars = list(dict.fromkeys(var_cast['cast1']))
     # cast_number = len(var_cast.keys())
     var = deepcopy(var_downcast)
-
-    # if have_oxy and have_fluor:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Fluorescence",
-    #         "Oxygen",
-    #         "Oxygen_mL_L",
-    #         "Oxygen_umol_kg",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # elif have_oxy and not have_fluor:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Oxygen",
-    #         "Oxygen_mL_L",
-    #         "Oxygen_umol_kg",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # elif have_fluor and not have_oxy:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Fluorescence",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # else:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
 
     # Do channel format corrections, unit conversions for each cast
     for cast_i in var.keys():
