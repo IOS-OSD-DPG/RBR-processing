@@ -142,14 +142,14 @@ def READ_RSK(
         year: str,
         cruise_number: str,
         skipcasts,
-        meta_dict,
-        zoh,
-        fix_spk,
-        fill_action,
+        meta_dict: dict,
+        zoh: bool,
+        fix_spk: bool,
+        fill_action: str,
         fill_type,
-        spk_window,
-        spk_std,
-        spk_var,
+        spk_window: int,
+        spk_std: int,
+        spk_var: str,
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None
@@ -167,6 +167,15 @@ def READ_RSK(
         - skipcasts: number of casts to skip over in an rsk file when writing data to output format.
             Input format as either an integer or as a list-like object with one integer per excel file
             representing the number of initial casts to skip in each excel file.
+        - zoh: whether or not to correct zero-order hold
+        - fill_action: parameter for pyrsktools.RSK.correcthold(); use value "nan" or "interp" to fill
+        holds with nans or linearly-interpolated values
+        - fill_type: long form of fill_action,
+        todo remove and write if fill_action == "interp", then fill_type="interpolated value"
+        - fix_spk: whether or not to despike
+        - spk_window: total size of the filter window for despiking. Must be odd. Defaults to 3 in pyrsktools.
+        - spk_std: amount of standard deviations to use for the spike criterion. Defaults to 2 in pyrsktools.
+        - spk_var: longname of channel to despike (e.g., temperature, or salinity, etc).
         - rsk_time1, rsk_time2: optional start and end times for 1 file in string format
         "YYYY-mm-dd HH:MM:SS" in UTC time. Use these parameters OR the rsk_start_end_times_file parameter
         - rsk_start_end_times_file: full path to a csv file containing the desired start
@@ -267,9 +276,7 @@ def READ_RSK(
                 input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
                 print('Using values with de-spiked chlorophyll')
 
-
         elif zoh:
-
             meta_dict["Processing_history"] = (
                 "-Zero-Order Holds Correction:|"
                 f" Correction type = Substitute with {fill_type}|"
@@ -306,7 +313,7 @@ def READ_RSK(
                 )
                 # print('despiked')
 
-                input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
+                # input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
                 # print('Using values with de-spiked chlorophyll')
                 # print('correcting hold and spikes')
                 # Compute the derived channels
@@ -317,7 +324,9 @@ def READ_RSK(
                 rsk.correcthold(action=fill_action)
 
                 # print('zoh corrected')
-                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action=fill_action)
+                rsk.despike(
+                    channels="chlorophyll_a", threshold=spk_std, windowLength=spk_window, action=fill_action
+                )
 
                 # print('despiked')
 
@@ -371,7 +380,7 @@ def READ_RSK(
         # check the number of profiles
         n_profiles = len(downcastIndices)  # get the number of profiles recorded
 
-        if type(skipcasts) == int:
+        if type(skipcasts) is int:
             profile_range = range(skipcasts, n_profiles)
         elif len(skipcasts) == len(header_event_no):
             # Check that for each event there is a corresponding number of casts to skip
