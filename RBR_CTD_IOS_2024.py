@@ -1125,7 +1125,6 @@ def plot_track_location(
     plt.show()
     plt.close(fig)
 
-
     return
 
 
@@ -1181,6 +1180,7 @@ def PLOT_PRESSURE_DIFF(dest_dir: str, year: str, cruise_number: str, input_ext: 
     plt.show()
     plt.close(fig)
     return
+
 
 def check_for_zoh(
         dest_dir, year: str, cruise_number: str, sampling_interval: float
@@ -1279,6 +1279,7 @@ def check_profiles(dest_dir, year, cruise_number, name1, name2):
             plt.show()
             plt.close()
             event_number_idx += 1
+
 
 def first_corrections(dest_dir,
                       year,
