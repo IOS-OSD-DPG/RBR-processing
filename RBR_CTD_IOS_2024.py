@@ -232,11 +232,11 @@ def READ_RSK(
             ]
 
         # Convert input start and end times to numpy datetime64 format
-        if type(rsk_time1) == str:
+        if type(rsk_time1) is str:
             rsk_time1 = np.datetime64(rsk_time1)
         else:
             rsk_time1 = None  # np.nan, pd.na, or something similar
-        if type(rsk_time2) == str:
+        if type(rsk_time2) is str:
             rsk_time2 = np.datetime64(rsk_time2)
         else:
             rsk_time2 = None
@@ -595,13 +595,13 @@ def READ_EXCELrsk(
             # extract data for each profile - using start and end times
             downcast = df1.loc[
                 (df1["Time"] > down_start_time) & (df1["Time"] <= down_end_time)
-            ]
+                ]
             downcast["Cast_direction"] = "d"
             # Add event numbers
             downcast["Event"] = header_event_no[event_number_idx]  # current_profile
             upcast = df1.loc[
                 (df1["Time"] > up_start_time) & (df1["Time"] <= up_end_time)
-            ]
+                ]
             upcast["Cast_direction"] = "u"
             upcast["Event"] = header_event_no[event_number_idx]  # current_profile
             # combine downcast and upcast into one profile
@@ -794,8 +794,8 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     ctd_data = pd.read_csv(input_filename, header=0)
 
     ctd_data["Time(yyyy-mm-dd HH:MM:ss.FFF)"] = ctd_data[
-        "Time(yyyy-mm-dd HH:MM:ss.FFF)"
-    ].str[:19]
+                                                    "Time(yyyy-mm-dd HH:MM:ss.FFF)"
+                                                ].str[:19]
     ctd_data["Date"] = pd.to_datetime(
         ctd_data["Time(yyyy-mm-dd HH:MM:ss.FFF)"]
     )  # add new column of Date
@@ -1221,11 +1221,11 @@ def check_for_zoh(
     print("Number of pressure records:", len(pressure))
     print("Sum of zero pressure differences:", sum(pressure_diffs == 0))
     # decided not to show this
-    #print(
+    # print(
     #    "Intervals between zero pressure differences:",
     #    np.diff(np.where(pressure_diffs == 0)[0]),
     #    sep="\n",
-    #)
+    # )
 
     sec2min = 1 / 60  # Convert seconds to minutes b/c sampling interval in seconds
     if sum(pressure_diffs == 0) >= np.floor(
@@ -1436,7 +1436,7 @@ def CREATE_CAST_VARIABLES(
     for i in unique_event_numbers:
         var_holder_d["cast" + str(i)] = ctd.loc[
             (ctd["Event_number"] == str(i)) & (ctd["Cast_direction"] == "d")
-        ]
+            ]
     # var_holder_d['Processing_history'] = ""
 
     # Upcast dictionary
@@ -1445,7 +1445,7 @@ def CREATE_CAST_VARIABLES(
     for i in unique_event_numbers:
         var_holder_u["cast" + str(i)] = ctd.loc[
             (ctd["Event_number"] == str(i)) & (ctd["Cast_direction"] == "u")
-        ]
+            ]
     # var_holder_u['Processing_history'] = ""
 
     return var_holder, var_holder_d, var_holder_u
@@ -3164,6 +3164,7 @@ def plot_delete(cast_d_wakeeffect: dict, cast_d_shift_o: dict, dest_dir: str) ->
 
     return
 
+
 def DROP_SELECT_VARS(
         dest_dir: str, var_downcast: dict, drop_vars_file: str, metadata_dict: dict
 ) -> dict:
@@ -3890,13 +3891,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["CLIP_D_Time" + str(cast_number)]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["CLIP_D_Time" + str(cast_number)]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_calib["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_clip["cast" + str(cast_number)].shape[0]))
@@ -3918,13 +3919,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["SHIFT_Conductivity_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["SHIFT_Conductivity_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_filtered["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_shift_c["cast" + str(cast_number)].shape[0]))
@@ -3936,13 +3937,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["SHIFT_Oxygen_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["SHIFT_Oxygen_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_shift_c["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
@@ -3952,13 +3953,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DERIVE_OXYGEN_CONCENTRATION_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["DERIVE_OXYGEN_CONCENTRATION_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(str(cast_d_o_conc["cast" + str(cast_number)].shape[0]))
@@ -3969,13 +3970,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["DELETE_PRESSURE_REVERSAL_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["DELETE_PRESSURE_REVERSAL_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(
@@ -3992,13 +3993,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_wakeeffect["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(
@@ -4268,12 +4269,12 @@ def write_data(
         for cn, wd in channel_widths_available.items():
             if cn != "Observation_counts":
                 print_line += (
-                    wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
-                    + " "
+                        wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
+                        + " "
                 )
             else:
                 print_line += (
-                        wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
+                    wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
                 )  # Omit space after the last column, which is Observation_counts
         print(print_line)
     # ---------------
@@ -4576,12 +4577,12 @@ def first_step(
      inputs:
         - dest_dir, year, cruise_number
         - data_file_type: 'rsk' for *.rsk files or 'excel' for *.xlsx type files
+        (use on .xlsx files exported from Ruskin)
         - skipcasts: number of casts to skip over in each data file (rsk or excel)
             when writing data to output format. Input format as either an integer
             or as a list-like object with one integer per excel file
             representing the number of initial casts to skip in each excel file.
-        - data_file_type: "rsk" for single or multiple rsk files, or "excel"
-        (use on .xlsx files exported from Ruskin)
+        - rsk_time1, rsk_time2:
         - left_lon, right_lon, bot_lat, top_lat: map extent for plotting cast locations
      Outputs:
         - None in terms of python objects, but data files and plots are saved
