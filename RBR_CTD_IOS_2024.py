@@ -4038,10 +4038,13 @@ def write_history(
 
 
 def write_comments(
-        processing_report_name: str, channel_names,
-        processing_comments1, processing_comments2,
-        processing_comments3, processing_comments4,
-        processing_comments5# have_fluor: bool, have_oxy: bool,
+        processing_report_name: str,
+        channel_names,
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None  # have_fluor: bool, have_oxy: bool,
 ) -> None:
     """Write comments section in the IOS header file
     inputs:
@@ -4411,11 +4414,11 @@ def main_header(
         cast_d_final: dict,
         channel_names,
         processing_report_name: str,
-        processing_comments1,
-        processing_comments2,
-        processing_comments3,
-        processing_comments4,
-        processing_comments5
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None
 ) -> str:
     """
     Main function for creating an IOS header file containing final processed RBR CTD data
