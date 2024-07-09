@@ -1318,11 +1318,11 @@ def first_corrections(dest_dir,
     fix_spk = spk_input
     zoh = zoh_input
 
-    #fill_action = "interp"
-    #fill_type = "interpolated value"
-    #spk_window = 11
-    #spk_std = 3
-    #spk_var = "Fluorescence:URU"
+    # fill_action = "interp"
+    # fill_type = "interpolated value"
+    # spk_window = 11
+    # spk_std = 3
+    # spk_var = "Fluorescence:URU"
 
     # meta_dict = CREATE_META_DICT(dest_dir, rsk_file, year, cruise_number, rsk_time1, rsk_time2)
 
@@ -3633,7 +3633,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:16}".format(unit) #was 15
+                + "{:16}".format(unit)  # was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
@@ -3661,7 +3661,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:16}".format(unit) # was 15
+                + "{:16}".format(unit)  # was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
