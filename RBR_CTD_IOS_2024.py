@@ -1283,20 +1283,34 @@ def check_profiles(dest_dir, year, cruise_number, name1, name2):
 
 def first_corrections(dest_dir,
                       year,
-                      cruise_number,
+                      cruise_number: str,
                       skipcasts,
-                      meta_dict,
-                      verbose,
+                      meta_dict: dict,
+                      verbose: bool,
                       rsk_file,
-                      fill_action,
-                      fill_type,
-                      spk_window,
-                      spk_std,
-                      spk_var,
+                      fill_action: str,
+                      fill_type: str,
+                      spk_window: int,
+                      spk_std: int,
+                      spk_var: str,
                       rsk_start_end_times_file,
                       rsk_time1,
                       rsk_time2):
-    """a function to make corrections to the original rsk file for zoh and despiking"""
+    """
+    a function to make corrections to the original rsk file for zoh and despiking
+
+    inputs:
+        - zoh: whether or not to correct zero-order hold
+        - fill_action: parameter for pyrsktools.RSK.correcthold(); use value "nan" or "interp" to fill
+        holds with nans or linearly-interpolated values. pyrsktools defaults to "nan", we use "interp" for RBR.
+        - fix_spk: whether or not to despike
+        - spk_window: total size of the filter window for despiking. Must be odd. Defaults to 3 in pyrsktools.
+        Use 11 for RBR fluorescence
+        - spk_std: amount of standard deviations to use for the spike criterion. Defaults to 2 in pyrsktools.
+        Use 3 for RBR
+        - spk_var: longname of channel to despike (e.g., temperature, or salinity, etc). For RBR, select
+        "Fluorescence:URU"
+    """
 
     spk_input = input('Is despiking needed? True or False')
     if spk_input == 'True':
