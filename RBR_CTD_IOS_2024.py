@@ -3804,6 +3804,83 @@ def write_instrument(metadata_dict: dict) -> None:
     return
 
 
+def write_history2(dict_recs_out: dict, cast_number: int, metadata_dict: dict):
+    """
+    Write history section of .ctd file using a dictionary containing recs out for each
+    processing step, instead of passing all the dicts of processing steps
+    """
+    time_format = "%Y/%m/%d %H:%M:%S.%f"
+    print("*HISTORY")
+    print()
+    print("    $TABLE: PROGRAMS")
+    print("    !   Name     Vers   Date       Time     Recs In   Recs Out")
+    print("    !   -------- ------ ---------- -------- --------- ---------")
+
+    Name_length = len("        Z_ORDER  ")  # An example
+    leading_spaces = "        "  # Number of leading spaces in Name
+
+    # metadata_dict_time_key: History Name value used
+    name_map = {
+        'ZEROORDER': 'Z_ORDER',
+        'DESPIKE': 'DESPIKE',
+        'CORRECT_TIME_OFFSET': 'CORRECT_T',
+        'CALIB': 'CALIB',
+        'CLIP': 'CLIP',
+        'FILTER': 'FILTER',
+        'SHIFT_Conductivity': 'SHIFT',
+        'SHIFT_Oxygen': 'SHIFT',
+        'SHIFT_Fluorescence': 'SHIFT',
+        'DERIVE_OXYGEN_CONCENTRATION': 'DERIVE',
+        'DELETE_PRESSURE_REVERSAL': 'DELETE',
+        'DROP_SELECT_VARS': 'DROP_SEL',
+        'BINAVE': 'BINAVE',
+        'FINALEDIT': 'EDIT',
+    }
+
+    step_in = None  # Name of step for recs_in to be populated
+
+    for step_out in dict_recs_out.keys():
+        if step_in is None:
+            # Step_in = step_out for first processing step only
+            step_in = step_out
+
+        # print(step_in, step_out)
+        # The processing step names are different in the metadata_dict and HISTORY
+        meta_out_name = f"{step_out}_D_Time{cast_number}" if step_out == 'CLIP' else f"{step_out}_Time"
+        hist_out_name = name_map[step_out]
+
+        trailing_spaces = " " * (Name_length - len(leading_spaces) - len(hist_out_name))
+        Name = leading_spaces + hist_out_name + trailing_spaces
+        Vers = "{:7}".format(str(1.0))
+        Date = "{:11}".format(
+            metadata_dict[meta_out_name].strftime(time_format)[0:-7].split(" ")[0]
+        )
+        Time = "{:9}".format(
+            metadata_dict[meta_out_name].strftime(time_format)[0:-7].split(" ")[1]
+        )
+        Recs_In = "{:>9}".format(str(dict_recs_out[step_in][f"cast{cast_number}"]))
+        Recs_Out = "{:>10}".format(str(dict_recs_out[step_out][f"cast{cast_number}"]))
+
+        print(Name + Vers + Date + Time + Recs_In + Recs_Out)
+
+        # Update name of step_in
+        step_in = step_out
+
+    # Finish the section
+    print("    $END")
+    print(" $REMARKS")
+
+    list_number = len(metadata_dict["Processing_history"].split("|"))
+
+    for i in range(list_number):
+        print("     " + metadata_dict["Processing_history"].split("|")[i])
+
+    print("$END")
+    print()
+
+    return
+
+
 def write_history(
         cast_original: dict,
         cast_correct_time: dict,
@@ -4424,6 +4501,81 @@ def write_data(
     return
 
 
+def main_header2(
+        dest_dir: str,
+        n_cast: int,
+        meta_dict: dict,
+        cast: dict,
+        cast_d_final: dict,
+        dict_recs_out: dict,
+        channel_names,
+        processing_report_name: str,
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None
+) -> str:
+    """
+    Main function for creating an IOS header file containing final processed RBR CTD data
+    inputs:
+        - dest_dir: working directory that output files are saved to
+        - n_cast: cast/event number
+        - meta_dict: dictionary containing metadata for the selected RBR cruise
+        - cast: dictionary containing the original raw data from both the upcast and
+        downcast
+        - cast_d_final: dictionary containing the final processed data, with conductivity
+        in units of S/m
+        -
+    outputs:
+        - absolute path of the output data file
+    """
+    path_slash_type = "/" if "/" in dest_dir else "\\"
+    f_name = dest_dir.split(path_slash_type)[-2]
+    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".CTD"
+    new_dir = os.path.join(dest_dir, f"CTD{path_slash_type}")
+    output = new_dir + f_output
+    if not os.path.exists(new_dir):
+        os.makedirs(new_dir)
+    # Start
+    # datetime object containing current date and time
+    now = datetime.now()
+
+    # dd/mm/YY H:M:S
+    dt_string = now.strftime("%Y/%m/%d %H:%M:%S.%f")[0:-4]
+
+    IOS_string = "*IOS HEADER VERSION 2.0      2020/03/01 2020/04/15 PYTHON"
+
+    orig_stdout = sys.stdout
+    file_handle = open(output, "wt")
+    try:
+        sys.stdout = file_handle
+        print("*" + dt_string)
+        print(IOS_string)
+        print()  # print("\n") pring("\n" * 40)
+        write_file(n_cast, cast, cast_d_final, meta_dict)
+        write_admin(metadata_dict=meta_dict)
+        write_location(cast_number=n_cast, metadata_dict=meta_dict)
+        write_instrument(metadata_dict=meta_dict)
+        write_history2(
+            dict_recs_out,
+            cast_number=n_cast,
+            metadata_dict=meta_dict,
+        )
+        write_comments(
+            processing_report_name, channel_names, processing_comments1, processing_comments2,
+            processing_comments3, processing_comments4, processing_comments5
+        )  # , metadata_dict=meta_data, cast_d=cast_d) have_fluor, have_oxy,
+        write_data(
+            cast_d_final, cast_number=n_cast, channel_names=channel_names
+        )  # , cast_d=cast_d) have_fluor, have_oxy,
+        sys.stdout.flush()  # Recommended by Tom
+    finally:
+        sys.stdout = orig_stdout
+
+    return os.path.abspath(output)
+
+
 def main_header(
         dest_dir: str,
         n_cast: int,
@@ -4627,6 +4779,12 @@ def first_step(
     return
 
 
+def add_recs_out(cast_d: dict):
+    return {
+        cast_num: cast_d[cast_num].shape[0] for cast_num in cast_d.keys()
+    }
+
+
 def second_step(
         dest_dir: str,
         year: str,
@@ -4675,6 +4833,9 @@ def second_step(
     # cast, cast_d, cast_u = 0, 0, 0
     # cast_pc, cast_d_pc, cast_u_pc = 0, 0, 0
 
+    # Initialize dictionary to hold counts of number of observations for write_history()
+    dict_recs_out = {}
+
     if verbose:
         print("Checking need for zero-order hold correction...")
     # Check pressure channel for zero order holds
@@ -4703,6 +4864,8 @@ def second_step(
         year, cruise_number, dest_dir, input_ext
     )
 
+    dict_recs_out['ZEROORDER'] = add_recs_out(cast_d)
+
     for cast_i in cast_d.keys():
         have_oxy = True if "Oxygen" in cast_d[cast_i].columns else False
         have_fluor = True if "Fluorescence" in cast_d[cast_i].columns else False
@@ -4717,6 +4880,8 @@ def second_step(
         )
         if verbose:
             print("Time offset(s) corrected")
+
+        dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t)
     else:
         cast_correct_t, cast_d_correct_t, cast_u_correct_t = cast, cast_d, cast_u
 
@@ -4732,6 +4897,8 @@ def second_step(
                 pd_correction_value,
                 sep="\n",
             )
+        # Add recs out number
+        dict_recs_out['CALIB'] = add_recs_out(cast_d_pc)
     else:
         cast_pc, cast_d_pc, cast_u_pc = cast_correct_t, cast_d_correct_t, cast_u_correct_t
 
@@ -4751,6 +4918,8 @@ def second_step(
     )
 
     plot_clip(cast_d_clip, cast_d_pc, dest_dir)
+
+    dict_recs_out['CLIP'] = add_recs_out(cast_d_clip)
 
     if verbose:
         print("Casts clipped")
@@ -4775,6 +4944,8 @@ def second_step(
         cast_d_filtered, cast_u_filtered, cast_d_clip, cast_u_clip, dest_dir, have_fluor
     )
 
+    dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered)
+
     if verbose:
         print(
             f"Casts filtered, assuming a sample rate of {sample_rate} records per second"
@@ -4793,6 +4964,9 @@ def second_step(
         cast_d_shift_c, cast_u_shift_c, cast_d_filtered, cast_u_filtered, dest_dir
     )
 
+    # Cannot have two dict keys with same name SHIFT...
+    dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c)
+
     if verbose:
         print(f"Conductivity shifted {shift_recs_conductivity} scans")
 
@@ -4809,6 +4983,8 @@ def second_step(
             cast_d_shift_o, cast_u_shift_o, cast_d_shift_c, cast_u_shift_c, dest_dir
         )
 
+        dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o)
+
         if verbose:
             print(f"Oxygen shifted {shift_recs_oxygen} scans")
 
@@ -4816,6 +4992,8 @@ def second_step(
         cast_d_o_conc, cast_u_o_conc = DERIVE_OXYGEN_CONCENTRATION(
             cast_d_shift_o, cast_u_shift_o, metadata_dict
         )
+
+        dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc)
 
         if verbose:
             print("Oxygen concentration derived from oxygen saturation")
@@ -4829,6 +5007,8 @@ def second_step(
         cast_d_o_conc, cast_u_o_conc, metadata_dict=metadata_dict
     )
 
+    dict_recs_out['DELETE_PRESSURE_REVERSAL'] = add_recs_out(cast_d_wakeeffect)
+
     if verbose:
         print("Deleted pressure change reversals")
 
@@ -4840,6 +5020,8 @@ def second_step(
         cast_d_wakeeffect, cast_u_wakeeffect, metadata_dict=metadata_dict
     )
 
+    dict_recs_out['BINAVE'] = add_recs_out(cast_d_binned)
+
     if verbose:
         print("Records averaged into equal-width pressure bins")
 
@@ -4850,6 +5032,8 @@ def second_step(
         cast_d_dropvars = DROP_SELECT_VARS(
             dest_dir, cast_d_binned, drop_vars_file, metadata_dict
         )
+        dict_recs_out['DROP_SELECT_VARS'] = add_recs_out(cast_d_dropvars)
+
         if verbose:
             print("Select variables dropped from casts specified in", drop_vars_file)
     else:
@@ -4857,6 +5041,8 @@ def second_step(
 
     # Final edits: change conductivity units
     cast_d_final = FINAL_EDIT(cast_d_dropvars, metadata_dict)
+
+    dict_recs_out['FINALEDIT'] = add_recs_out(cast_d_final)
 
     if verbose:
         print("Final edit completed")
@@ -4880,26 +5066,28 @@ def second_step(
         # have_oxy = True if "Oxygen" in cast_d_final[f"cast{i}"].columns else False
         channel_names = cast_d_final[f"cast{i}"].columns
         # Call the main header creation function
-        main_header(
-            dest_dir,
-            i,
-            metadata_dict,
-            cast,
-            cast_d,
-            cast_d_correct_t,
-            cast_d_pc,
-            cast_d_clip,
-            cast_d_filtered,
-            cast_d_shift_c,
-            cast_d_shift_o,
-            cast_d_o_conc,
-            cast_d_wakeeffect,
-            cast_d_binned,
-            cast_d_dropvars,
-            cast_d_final,
-            channel_names,
-            processing_report_name,
-        )
+        # main_header(
+        #     dest_dir,
+        #     i,
+        #     metadata_dict,
+        #     cast,
+        #     cast_d,
+        #     cast_d_correct_t,
+        #     cast_d_pc,
+        #     cast_d_clip,
+        #     cast_d_filtered,
+        #     cast_d_shift_c,
+        #     cast_d_shift_o,
+        #     cast_d_o_conc,
+        #     cast_d_wakeeffect,
+        #     cast_d_binned,
+        #     cast_d_dropvars,
+        #     cast_d_final,
+        #     channel_names,
+        #     processing_report_name,
+        # )
+        main_header2(dest_dir, i, metadata_dict, cast, cast_d_final, dict_recs_out,
+                     channel_names, processing_report_name)
 
     if verbose:
         print("Header files produced")
