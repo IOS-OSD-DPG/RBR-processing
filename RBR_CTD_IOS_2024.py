@@ -448,6 +448,13 @@ def READ_RSK(
 
             # Update counter
             event_number_idx += 1
+
+    # Check if time_interval has been added to the metadata_dict yet
+    if 'Sampling_Interval' not in meta_dict.keys():
+        meta_dict['Sampling_Interval'] = str(
+            pd.to_datetime(rsk.data['timestamp'][2]) - pd.to_datetime(rsk.data['timestamp'][1])
+        )[-8:-3]
+
     return input_ext
 
 
@@ -715,14 +722,16 @@ def CREATE_META_DICT(
     header = pd.read_csv(header_input_filename, header=0)
 
     # get the time interval for the IOS Header (sampling period)
+    # Remove requirement for *_CTD_DATA.csv file (exported from Ruskin?)
     time_input_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA.csv"
     time_input_filename = dest_dir + time_input_name
-    time_input = pd.read_csv(time_input_filename)
-    time_interval = pd.to_datetime(
-        time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][2]
-    ) - pd.to_datetime(time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][1])
-    time_interval = str(time_interval)
-    time_interval = time_interval[-8:-3]
+    if os.path.exists(time_input_filename):
+        time_input = pd.read_csv(time_input_filename)
+        time_interval = pd.to_datetime(
+            time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][2]
+        ) - pd.to_datetime(time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][1])
+        time_interval = str(time_interval)
+        time_interval = time_interval[-8:-3]
 
     # Metadata file
     csv_input_name = str(year) + "-" + str(cruise_number) + "_METADATA.csv"
@@ -732,7 +741,8 @@ def CREATE_META_DICT(
     # Fill in metadata values
     meta_dict["Processing_Start_time"] = datetime.now()
     meta_dict["Instrument_information"] = rsk.instrument
-    meta_dict["Sampling_Interval"] = time_interval
+    if os.path.exists(time_input_filename):
+        meta_dict["Sampling_Interval"] = time_interval
     # print("time_interval", time_interval)
     # meta_dict['RSK_filename'] = rsk.name
     meta_dict["RSK_filename"] = meta_csv["Value"][
