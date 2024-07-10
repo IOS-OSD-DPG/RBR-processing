@@ -143,13 +143,13 @@ def READ_RSK(
         cruise_number: str,
         skipcasts,
         meta_dict: dict,
-        zoh: bool,
-        fix_spk: bool,
-        fill_action: str,
-        fill_type,
-        spk_window: int,
-        spk_std: int,
-        spk_var: str,
+        zoh=None,
+        fix_spk=None,
+        fill_action=None,
+        fill_type=None,
+        spk_window=None,
+        spk_std=None,
+        spk_var=None,
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None
@@ -219,13 +219,16 @@ def READ_RSK(
     # Iterate through all the rsk files that were found
     for k in range(n_files):
         print(files[k])
+
         # Open the rsk file and read the data within it
         filename = os.path.join(
             str(dest_dir), str(files[k])
         )  # full path and name of .rsk file
         # readHiddenChannels=True does not reveal the derived variables
+
         rsk = pyrsktools.RSK(filename, readHiddenChannels=False)  # load up an RSK
         rsk.open()
+
         if rsk_start_end_times_file is not None:
             rsk_time1, rsk_time2 = rsk_start_end_times_df.loc[
                 rsk_start_end_times_df.rsk_file == files[k], ["start_time", "end_time"]
@@ -298,7 +301,7 @@ def READ_RSK(
                 rsk.correcthold(action=fill_action)
 
                 input_ext = "CTD_DATA-6linehdr_corr_hold.csv"
-                print("using zoh correted values")
+                print("using zoh corrected values")
 
             elif fix_spk:
 
@@ -1288,14 +1291,15 @@ def first_corrections(dest_dir,
                       meta_dict: dict,
                       verbose: bool,
                       rsk_file,
-                      fill_action: str,
-                      fill_type: str,
-                      spk_window: int,
-                      spk_std: int,
-                      spk_var: str,
                       rsk_start_end_times_file,
                       rsk_time1,
-                      rsk_time2):
+                      rsk_time2,
+                      fill_action=None,
+                      fill_type=None,
+                      spk_window=None,
+                      spk_std=None,
+                      spk_var=None,
+                      ):
     """
     a function to make corrections to the original rsk file for zoh and despiking
 
@@ -2189,7 +2193,7 @@ def CORRECT_TIME_OFFSET(
         var_downcast: dict,
         var_upcast: dict,
         metadata_dict: dict,
-        correct_start_time_file: str,
+        correct_start_time_file=None,
 ):
     """
     If time data were recorded incorrectly, apply an offset to correct the time data.
@@ -4244,7 +4248,7 @@ def write_data(
     outputs:
         - Data values printed to open IOS header file, but nothing returned by the function
     """
-    # --------------
+
     channel_widths_all = {"Pressure": "{:>7}",
                           "Depth": "{:>6}",
                           "Temperature": "{:>8}",
