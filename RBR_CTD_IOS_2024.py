@@ -5014,7 +5014,7 @@ def second_step(
 
     # Average the data into 1-dbar bins
     cast_d_binned, cast_u_binned = BINAVE(
-        cast_d_wakeeffect, cast_u_wakeeffect, metadata_dict=metadata_dict
+        cast_d_wakeeffect, metadata_dict=metadata_dict
     )
 
     dict_recs_out['BINAVE'] = add_recs_out(cast_d_binned)
