@@ -2245,10 +2245,7 @@ def CORRECT_TIME_OFFSET(
         #     return
         correct_time_j = correct_time_df.loc[j, "time_dt"]
 
-        if correct_time_j == np.nan:
-            # Skip iteration if correction not needed for cast_i
-            continue
-        else:
+        if correct_time_j != np.nan:
             # Find the offset of the correct time
             # Index may not necessarily start at 0
             var1_first_index = var1[cast_i].index[0]
