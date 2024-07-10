@@ -3535,7 +3535,7 @@ def write_file(
         "Salinity": ("Salinity", "PSS-78", "%.04f", nan, 9, "F", "R4", 4),
         "Fluorescence": ("Fluorescence:URU", "mg/m^3", "%.03f", nan, 8, "F", "R4", 3),
         "Oxygen": (
-            "Oxygen:Dissolved:Saturation:RBR",
+            "Oxygen:Dissolved:Saturation:Rinko",
             "%",
             "%.04f",
             nan,
@@ -3544,7 +3544,7 @@ def write_file(
             "R4",
             2,
         ),
-        "Oxygen_mL_L": ("Oxygen:Dissolved:RBR", "mL/L", "%.04f", nan, 8, "F", "R4", 2),
+        "Oxygen_mL_L": ("Oxygen:Dissolved:Rinko", "mL/L", "%.04f", nan, 8, "F", "R4", 2),
         "Oxygen_umol_kg": (
             "Oxygen:Dissolved:RBR",
             "umol/kg",
