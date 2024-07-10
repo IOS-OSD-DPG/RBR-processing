@@ -30,8 +30,10 @@ import random
 # from ocean_data_parser.convert.oxygen import O2stoO2c
 from o2conversion import O2stoO2c
 from seawater import eos80
-import pandoc
-import shutil
+
+# import pandoc
+# import shutil
+
 #
 # import warnings
 # import itertools
@@ -140,14 +142,14 @@ def READ_RSK(
         year: str,
         cruise_number: str,
         skipcasts,
-        meta_dict,
-        zoh,
-        fix_spk,
-        fill_action,
-        fill_type,
-        spk_window,
-        spk_std,
-        spk_var,
+        meta_dict: dict,
+        zoh=None,
+        fix_spk=None,
+        fill_action=None,
+        fill_type=None,
+        spk_window=None,
+        spk_std=None,
+        spk_var=None,
         rsk_start_end_times_file=None,
         rsk_time1=None,
         rsk_time2=None
@@ -165,6 +167,15 @@ def READ_RSK(
         - skipcasts: number of casts to skip over in an rsk file when writing data to output format.
             Input format as either an integer or as a list-like object with one integer per excel file
             representing the number of initial casts to skip in each excel file.
+        - zoh: whether or not to correct zero-order hold
+        - fill_action: parameter for pyrsktools.RSK.correcthold(); use value "nan" or "interp" to fill
+        holds with nans or linearly-interpolated values
+        - fill_type: long form of fill_action,
+        todo remove and write if fill_action == "interp", then fill_type="interpolated value"
+        - fix_spk: whether or not to despike
+        - spk_window: total size of the filter window for despiking. Must be odd. Defaults to 3 in pyrsktools.
+        - spk_std: amount of standard deviations to use for the spike criterion. Defaults to 2 in pyrsktools.
+        - spk_var: longname of channel to despike (e.g., temperature, or salinity, etc).
         - rsk_time1, rsk_time2: optional start and end times for 1 file in string format
         "YYYY-mm-dd HH:MM:SS" in UTC time. Use these parameters OR the rsk_start_end_times_file parameter
         - rsk_start_end_times_file: full path to a csv file containing the desired start
@@ -208,24 +219,27 @@ def READ_RSK(
     # Iterate through all the rsk files that were found
     for k in range(n_files):
         print(files[k])
+
         # Open the rsk file and read the data within it
         filename = os.path.join(
             str(dest_dir), str(files[k])
         )  # full path and name of .rsk file
         # readHiddenChannels=True does not reveal the derived variables
+
         rsk = pyrsktools.RSK(filename, readHiddenChannels=False)  # load up an RSK
         rsk.open()
+
         if rsk_start_end_times_file is not None:
             rsk_time1, rsk_time2 = rsk_start_end_times_df.loc[
                 rsk_start_end_times_df.rsk_file == files[k], ["start_time", "end_time"]
             ]
 
         # Convert input start and end times to numpy datetime64 format
-        if type(rsk_time1) == str:
+        if type(rsk_time1) is str:
             rsk_time1 = np.datetime64(rsk_time1)
         else:
             rsk_time1 = None  # np.nan, pd.na, or something similar
-        if type(rsk_time2) == str:
+        if type(rsk_time2) is str:
             rsk_time2 = np.datetime64(rsk_time2)
         else:
             rsk_time2 = None
@@ -265,9 +279,7 @@ def READ_RSK(
                 input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
                 print('Using values with de-spiked chlorophyll')
 
-
         elif zoh:
-
             meta_dict["Processing_history"] = (
                 "-Zero-Order Holds Correction:|"
                 f" Correction type = Substitute with {fill_type}|"
@@ -289,7 +301,7 @@ def READ_RSK(
                 rsk.correcthold(action=fill_action)
 
                 input_ext = "CTD_DATA-6linehdr_corr_hold.csv"
-                print("using zoh correted values")
+                print("using zoh corrected values")
 
             elif fix_spk:
 
@@ -304,7 +316,7 @@ def READ_RSK(
                 )
                 # print('despiked')
 
-                input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
+                # input_ext = "CTD_DATA-6linehdr_corr_spk.csv"
                 # print('Using values with de-spiked chlorophyll')
                 # print('correcting hold and spikes')
                 # Compute the derived channels
@@ -315,7 +327,9 @@ def READ_RSK(
                 rsk.correcthold(action=fill_action)
 
                 # print('zoh corrected')
-                rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action=fill_action)
+                rsk.despike(
+                    channels="chlorophyll_a", threshold=spk_std, windowLength=spk_window, action=fill_action
+                )
 
                 # print('despiked')
 
@@ -369,7 +383,7 @@ def READ_RSK(
         # check the number of profiles
         n_profiles = len(downcastIndices)  # get the number of profiles recorded
 
-        if type(skipcasts) == int:
+        if type(skipcasts) is int:
             profile_range = range(skipcasts, n_profiles)
         elif len(skipcasts) == len(header_event_no):
             # Check that for each event there is a corresponding number of casts to skip
@@ -434,6 +448,13 @@ def READ_RSK(
 
             # Update counter
             event_number_idx += 1
+
+    # Check if time_interval has been added to the metadata_dict yet
+    if 'Sampling_Interval' not in meta_dict.keys():
+        meta_dict['Sampling_Interval'] = str(
+            pd.to_datetime(rsk.data['timestamp'][2]) - pd.to_datetime(rsk.data['timestamp'][1])
+        )[-8:-3]
+
     return input_ext
 
 
@@ -584,13 +605,13 @@ def READ_EXCELrsk(
             # extract data for each profile - using start and end times
             downcast = df1.loc[
                 (df1["Time"] > down_start_time) & (df1["Time"] <= down_end_time)
-            ]
+                ]
             downcast["Cast_direction"] = "d"
             # Add event numbers
             downcast["Event"] = header_event_no[event_number_idx]  # current_profile
             upcast = df1.loc[
                 (df1["Time"] > up_start_time) & (df1["Time"] <= up_end_time)
-            ]
+                ]
             upcast["Cast_direction"] = "u"
             upcast["Event"] = header_event_no[event_number_idx]  # current_profile
             # combine downcast and upcast into one profile
@@ -701,14 +722,16 @@ def CREATE_META_DICT(
     header = pd.read_csv(header_input_filename, header=0)
 
     # get the time interval for the IOS Header (sampling period)
+    # Remove requirement for *_CTD_DATA.csv file (exported from Ruskin?)
     time_input_name = str(year) + "-" + str(cruise_number) + "_CTD_DATA.csv"
     time_input_filename = dest_dir + time_input_name
-    time_input = pd.read_csv(time_input_filename)
-    time_interval = pd.to_datetime(
-        time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][2]
-    ) - pd.to_datetime(time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][1])
-    time_interval = str(time_interval)
-    time_interval = time_interval[-8:-3]
+    if os.path.exists(time_input_filename):
+        time_input = pd.read_csv(time_input_filename)
+        time_interval = pd.to_datetime(
+            time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][2]
+        ) - pd.to_datetime(time_input["Time(yyyy-mm-dd HH:MM:ss.FFF)"][1])
+        time_interval = str(time_interval)
+        time_interval = time_interval[-8:-3]
 
     # Metadata file
     csv_input_name = str(year) + "-" + str(cruise_number) + "_METADATA.csv"
@@ -718,7 +741,8 @@ def CREATE_META_DICT(
     # Fill in metadata values
     meta_dict["Processing_Start_time"] = datetime.now()
     meta_dict["Instrument_information"] = rsk.instrument
-    meta_dict["Sampling_Interval"] = time_interval
+    if os.path.exists(time_input_filename):
+        meta_dict["Sampling_Interval"] = time_interval
     # print("time_interval", time_interval)
     # meta_dict['RSK_filename'] = rsk.name
     meta_dict["RSK_filename"] = meta_csv["Value"][
@@ -783,8 +807,8 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     ctd_data = pd.read_csv(input_filename, header=0)
 
     ctd_data["Time(yyyy-mm-dd HH:MM:ss.FFF)"] = ctd_data[
-        "Time(yyyy-mm-dd HH:MM:ss.FFF)"
-    ].str[:19]
+                                                    "Time(yyyy-mm-dd HH:MM:ss.FFF)"
+                                                ].str[:19]
     ctd_data["Date"] = pd.to_datetime(
         ctd_data["Time(yyyy-mm-dd HH:MM:ss.FFF)"]
     )  # add new column of Date
@@ -1114,7 +1138,6 @@ def plot_track_location(
     plt.show()
     plt.close(fig)
 
-
     return
 
 
@@ -1171,6 +1194,7 @@ def PLOT_PRESSURE_DIFF(dest_dir: str, year: str, cruise_number: str, input_ext: 
     plt.close(fig)
     return
 
+
 def check_for_zoh(
         dest_dir, year: str, cruise_number: str, sampling_interval: float
 ) -> bool:
@@ -1210,11 +1234,11 @@ def check_for_zoh(
     print("Number of pressure records:", len(pressure))
     print("Sum of zero pressure differences:", sum(pressure_diffs == 0))
     # decided not to show this
-    #print(
+    # print(
     #    "Intervals between zero pressure differences:",
     #    np.diff(np.where(pressure_diffs == 0)[0]),
     #    sep="\n",
-    #)
+    # )
 
     sec2min = 1 / 60  # Convert seconds to minutes b/c sampling interval in seconds
     if sum(pressure_diffs == 0) >= np.floor(
@@ -1269,22 +1293,38 @@ def check_profiles(dest_dir, year, cruise_number, name1, name2):
             plt.close()
             event_number_idx += 1
 
+
 def first_corrections(dest_dir,
                       year,
-                      cruise_number,
+                      cruise_number: str,
                       skipcasts,
-                      meta_dict,
-                      verbose,
+                      meta_dict: dict,
+                      verbose: bool,
                       rsk_file,
-                      fill_action,
-                      fill_type,
-                      spk_window,
-                      spk_std,
-                      spk_var,
                       rsk_start_end_times_file,
                       rsk_time1,
-                      rsk_time2):
-    """a function to make corrections to the original rsk file for zoh and despiking"""
+                      rsk_time2,
+                      fill_action=None,
+                      fill_type=None,
+                      spk_window=None,
+                      spk_std=None,
+                      spk_var=None,
+                      ):
+    """
+    a function to make corrections to the original rsk file for zoh and despiking
+
+    inputs:
+        - zoh: whether or not to correct zero-order hold
+        - fill_action: parameter for pyrsktools.RSK.correcthold(); use value "nan" or "interp" to fill
+        holds with nans or linearly-interpolated values. pyrsktools defaults to "nan", we use "interp" for RBR.
+        - fix_spk: whether or not to despike
+        - spk_window: total size of the filter window for despiking. Must be odd. Defaults to 3 in pyrsktools.
+        Use 11 for RBR fluorescence
+        - spk_std: amount of standard deviations to use for the spike criterion. Defaults to 2 in pyrsktools.
+        Use 3 for RBR
+        - spk_var: longname of channel to despike (e.g., temperature, or salinity, etc). For RBR, select
+        "Fluorescence:URU"
+    """
 
     spk_input = input('Is despiking needed? True or False')
     if spk_input == 'True':
@@ -1306,11 +1346,11 @@ def first_corrections(dest_dir,
     fix_spk = spk_input
     zoh = zoh_input
 
-    #fill_action = "interp"
-    #fill_type = "interpolated value"
-    #spk_window = 11
-    #spk_std = 3
-    #spk_var = "Fluorescence:URU"
+    # fill_action = "interp"
+    # fill_type = "interpolated value"
+    # spk_window = 11
+    # spk_std = 3
+    # spk_var = "Fluorescence:URU"
 
     # meta_dict = CREATE_META_DICT(dest_dir, rsk_file, year, cruise_number, rsk_time1, rsk_time2)
 
@@ -1341,9 +1381,6 @@ def first_corrections(dest_dir,
             print("using original variables")
 
     return input_ext
-
-
-#first_corrections(dest_dir, year, cruise_number, skipcasts, rsk_start_end_times_file, rsk_time1, rsk_time2)
 
 
 def CREATE_CAST_VARIABLES(
@@ -1413,7 +1450,7 @@ def CREATE_CAST_VARIABLES(
     for i in unique_event_numbers:
         var_holder_d["cast" + str(i)] = ctd.loc[
             (ctd["Event_number"] == str(i)) & (ctd["Cast_direction"] == "d")
-        ]
+            ]
     # var_holder_d['Processing_history'] = ""
 
     # Upcast dictionary
@@ -1422,7 +1459,7 @@ def CREATE_CAST_VARIABLES(
     for i in unique_event_numbers:
         var_holder_u["cast" + str(i)] = ctd.loc[
             (ctd["Event_number"] == str(i)) & (ctd["Cast_direction"] == "u")
-        ]
+            ]
     # var_holder_u['Processing_history'] = ""
 
     return var_holder, var_holder_d, var_holder_u
@@ -1984,9 +2021,6 @@ def first_plots(year: str, cruise_number: str, dest_dir: str, input_ext: str) ->
     return
 
 
-
-
-
 def CORRECT_HOLD(
         dest_dir: str, year: str, cruise_number: str, metadata_dict: dict, fill_type: str
 ) -> None:
@@ -2169,7 +2203,7 @@ def CORRECT_TIME_OFFSET(
         var_downcast: dict,
         var_upcast: dict,
         metadata_dict: dict,
-        correct_start_time_file: str,
+        correct_start_time_file=None,
 ):
     """
     If time data were recorded incorrectly, apply an offset to correct the time data.
@@ -2211,10 +2245,7 @@ def CORRECT_TIME_OFFSET(
         #     return
         correct_time_j = correct_time_df.loc[j, "time_dt"]
 
-        if correct_time_j == np.nan:
-            # Skip iteration if correction not needed for cast_i
-            continue
-        else:
+        if correct_time_j != np.nan:
             # Find the offset of the correct time
             # Index may not necessarily start at 0
             var1_first_index = var1[cast_i].index[0]
@@ -2429,28 +2460,6 @@ def plot_clip(cast_d_clip: dict, cast_d_pc: dict, dest_dir: str) -> None:
     plt.savefig(os.path.join(figure_dir, "After_Clip_P_vs_t.png"))
     plt.close(fig)
 
-    # # plot all cast together
-    #
-    # number_of_colors = len(cast)
-    # color = ["#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)])
-    #          for i in range(number_of_colors)]
-    #
-    # fig, ax = plt.subplots()
-    # for i in range(0, len(cast), 1):
-    #     ax.plot(cast_d_clip['cast' + str(i + 1)].TIME,
-    #             cast_d_clip['cast' + str(i + 1)].Pressure, color=color[i],
-    #             label='cast' + str(i + 1))
-    #     # ax.plot(cast_u['cast' + str(i+1)].Salinity, cast_u['cast' + str(i+1)].Pressure, '--', color=color[i],
-    #     #         label= 'cast' + str(i+1))
-    # # ax.plot(cast_d['cast1'].Salinity, cast_d['cast1'].Pressure, color='blue', label='cast1')
-    # # ax.plot(cast_u['cast1'].Salinity, cast_u['cast1'].Pressure, '--', color='blue', label='cast1')
-    # ax.invert_yaxis()
-    # ax.xaxis.set_label_position('top')
-    # ax.xaxis.set_ticks_position('top')
-    # ax.set_xlabel('Time')
-    # ax.set_ylabel('Pressure (decibar)')
-    # ax.set_title('After Clip')
-    # ax.legend()
     return
 
 
@@ -3166,6 +3175,7 @@ def plot_delete(cast_d_wakeeffect: dict, cast_d_shift_o: dict, dest_dir: str) ->
 
     return
 
+
 def DROP_SELECT_VARS(
         dest_dir: str, var_downcast: dict, drop_vars_file: str, metadata_dict: dict
 ) -> dict:
@@ -3231,10 +3241,9 @@ def DROP_SELECT_VARS(
     return var
 
 
-
 def BINAVE(
-        var_downcast: dict,  metadata_dict: dict, interval=1
-) : # removing the upcast from this function var_upcast: dict,
+        var_downcast: dict, metadata_dict: dict, interval=1
+):  # removing the upcast from this function var_upcast: dict,
     """
     Bin average the profiles
     Note: Bin width and spacing are both universally chosen to be 1m in coastal waters
@@ -3246,7 +3255,7 @@ def BINAVE(
     """
     # cast_number = len(var_downcast.keys())
     var1 = deepcopy(var_downcast)
-    #var2 = deepcopy(var_upcast)
+    # var2 = deepcopy(var_upcast)
     # Iterate through all the casts
     for cast_i in var1.keys():
         start_d = np.floor(np.nanmin(var1[cast_i].Pressure.values))
@@ -3265,17 +3274,17 @@ def BINAVE(
         )  # drop the nans - ask if this is OK?
         var1[cast_i].reset_index(drop=True, inplace=True)
 
-        #start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
-        #stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
-        #new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
-        #binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
-        #obs_count_u = var2[cast_i].groupby(binned_u).size()
+        # start_u = np.ceil(np.nanmax(var2[cast_i].Pressure.values))
+        # stop_u = np.floor(np.nanmin(var2[cast_i].Pressure.values))
+        # new_press_u = np.arange(start_u + 0.5, stop_u - 1.5, -interval)
+        # binned_u = pd.cut(var2[cast_i].Pressure, bins=new_press_u[::-1])
+        # obs_count_u = var2[cast_i].groupby(binned_u).size()
 
-        #var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
-        #var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
-        #var2[cast_i]["Observation_counts"] = obs_count_u
-        #var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
-        #var2[cast_i].reset_index(drop=True, inplace=True)
+        # var2[cast_i] = var2[cast_i].groupby(binned_u).mean()
+        # var2[cast_i] = var2[cast_i].sort_values("Depth", ascending=False)
+        # var2[cast_i]["Observation_counts"] = obs_count_u
+        # var2[cast_i] = var2[cast_i].dropna(axis=0, how="any")
+        # var2[cast_i].reset_index(drop=True, inplace=True)
         # Replicate IOS Shell's output Bin Channel = Bin value not average value
         # might need to change this with round_to_int in HH adcp code.
         var1[cast_i]['Pressure'] = var1[cast_i]['Pressure'].round(decimals=0)
@@ -3294,8 +3303,6 @@ def BINAVE(
     return var1
 
 
-
-
 def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
     """
     Final editing the profiles: edit header information, correct the unit of conductivity
@@ -3308,51 +3315,6 @@ def FINAL_EDIT(var_downcast: dict, metadata_dict: dict) -> dict:
     # vars = list(dict.fromkeys(var_cast['cast1']))
     # cast_number = len(var_cast.keys())
     var = deepcopy(var_downcast)
-
-    # if have_oxy and have_fluor:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Fluorescence",
-    #         "Oxygen",
-    #         "Oxygen_mL_L",
-    #         "Oxygen_umol_kg",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # elif have_oxy and not have_fluor:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Oxygen",
-    #         "Oxygen_mL_L",
-    #         "Oxygen_umol_kg",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # elif have_fluor and not have_oxy:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Fluorescence",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
-    # else:
-    #     col_list = [
-    #         "Pressure",
-    #         "Depth",
-    #         "Temperature",
-    #         "Salinity",
-    #         "Conductivity",
-    #         "Observation_counts",
-    #     ]
 
     # Do channel format corrections, unit conversions for each cast
     for cast_i in var.keys():
@@ -3626,7 +3588,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:16}".format(unit) #was 15
+                + "{:16}".format(unit)  # was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
@@ -3654,7 +3616,7 @@ def write_file(
                 "{:>8}".format(str(current_chan_no))
                 + " "
                 + "{:33}".format(ios_name)
-                + "{:16}".format(unit) # was 15
+                + "{:16}".format(unit)  # was 15
                 + "{:15}".format(
                     str(
                         np.nanmin(
@@ -3839,6 +3801,83 @@ def write_instrument(metadata_dict: dict) -> None:
     return
 
 
+def write_history2(dict_recs_out: dict, cast_number: int, metadata_dict: dict):
+    """
+    Write history section of .ctd file using a dictionary containing recs out for each
+    processing step, instead of passing all the dicts of processing steps
+    """
+    time_format = "%Y/%m/%d %H:%M:%S.%f"
+    print("*HISTORY")
+    print()
+    print("    $TABLE: PROGRAMS")
+    print("    !   Name     Vers   Date       Time     Recs In   Recs Out")
+    print("    !   -------- ------ ---------- -------- --------- ---------")
+
+    Name_length = len("        Z_ORDER  ")  # An example
+    leading_spaces = "        "  # Number of leading spaces in Name
+
+    # metadata_dict_time_key: History Name value used
+    name_map = {
+        'ZEROORDER': 'Z_ORDER',
+        'DESPIKE': 'DESPIKE',
+        'CORRECT_TIME_OFFSET': 'CORRECT_T',
+        'CALIB': 'CALIB',
+        'CLIP': 'CLIP',
+        'FILTER': 'FILTER',
+        'SHIFT_Conductivity': 'SHIFT',
+        'SHIFT_Oxygen': 'SHIFT',
+        'SHIFT_Fluorescence': 'SHIFT',
+        'DERIVE_OXYGEN_CONCENTRATION': 'DERIVE',
+        'DELETE_PRESSURE_REVERSAL': 'DELETE',
+        'DROP_SELECT_VARS': 'DROP_SEL',
+        'BINAVE': 'BINAVE',
+        'FINALEDIT': 'EDIT',
+    }
+
+    step_in = None  # Name of step for recs_in to be populated
+
+    for step_out in dict_recs_out.keys():
+        if step_in is None:
+            # Step_in = step_out for first processing step only
+            step_in = step_out
+
+        # print(step_in, step_out)
+        # The processing step names are different in the metadata_dict and HISTORY
+        meta_out_name = f"{step_out}_D_Time{cast_number}" if step_out == 'CLIP' else f"{step_out}_Time"
+        hist_out_name = name_map[step_out]
+
+        trailing_spaces = " " * (Name_length - len(leading_spaces) - len(hist_out_name))
+        Name = leading_spaces + hist_out_name + trailing_spaces
+        Vers = "{:7}".format(str(1.0))
+        Date = "{:11}".format(
+            metadata_dict[meta_out_name].strftime(time_format)[0:-7].split(" ")[0]
+        )
+        Time = "{:9}".format(
+            metadata_dict[meta_out_name].strftime(time_format)[0:-7].split(" ")[1]
+        )
+        Recs_In = "{:>9}".format(str(dict_recs_out[step_in][f"cast{cast_number}"]))
+        Recs_Out = "{:>10}".format(str(dict_recs_out[step_out][f"cast{cast_number}"]))
+
+        print(Name + Vers + Date + Time + Recs_In + Recs_Out)
+
+        # Update name of step_in
+        step_in = step_out
+
+    # Finish the section
+    print("    $END")
+    print(" $REMARKS")
+
+    list_number = len(metadata_dict["Processing_history"].split("|"))
+
+    for i in range(list_number):
+        print("     " + metadata_dict["Processing_history"].split("|")[i])
+
+    print("$END")
+    print()
+
+    return
+
+
 def write_history(
         cast_original: dict,
         cast_correct_time: dict,
@@ -3940,13 +3979,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["CLIP_D_Time" + str(cast_number)]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["CLIP_D_Time" + str(cast_number)]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_calib["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_clip["cast" + str(cast_number)].shape[0]))
@@ -3968,13 +4007,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["SHIFT_Conductivity_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["SHIFT_Conductivity_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_filtered["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(str(cast_shift_c["cast" + str(cast_number)].shape[0]))
@@ -3986,13 +4025,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["SHIFT_Oxygen_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["SHIFT_Oxygen_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_shift_c["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
@@ -4002,13 +4041,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DERIVE_OXYGEN_CONCENTRATION_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["DERIVE_OXYGEN_CONCENTRATION_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(str(cast_d_o_conc["cast" + str(cast_number)].shape[0]))
@@ -4019,13 +4058,13 @@ def write_history(
         + "{:7}".format(str(1.0))
         + "{:11}".format(
             metadata_dict["DELETE_PRESSURE_REVERSAL_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[0]
+            .strftime(time_format)[0:-7]
+            .split(" ")[0]
         )
         + "{:9}".format(
             metadata_dict["DELETE_PRESSURE_REVERSAL_Time"]
-                .strftime(time_format)[0:-7]
-                .split(" ")[1]
+            .strftime(time_format)[0:-7]
+            .split(" ")[1]
         )
         + "{:>9}".format(str(cast_shift_o["cast" + str(cast_number)].shape[0]))
         + "{:>10}".format(
@@ -4042,13 +4081,13 @@ def write_history(
             + "{:7}".format(str(1.0))
             + "{:11}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[0]
+                .strftime(time_format)[0:-7]
+                .split(" ")[0]
             )
             + "{:9}".format(
                 metadata_dict["DROP_SELECT_VARS_Time"]
-                    .strftime(time_format)[0:-7]
-                    .split(" ")[1]
+                .strftime(time_format)[0:-7]
+                .split(" ")[1]
             )
             + "{:>9}".format(str(cast_wakeeffect["cast" + str(cast_number)].shape[0]))
             + "{:>10}".format(
@@ -4102,10 +4141,13 @@ def write_history(
 
 
 def write_comments(
-        processing_report_name: str, channel_names,
-        processing_comments1, processing_comments2,
-        processing_comments3, processing_comments4,
-        processing_comments5# have_fluor: bool, have_oxy: bool,
+        processing_report_name: str,
+        channel_names,
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None  # have_fluor: bool, have_oxy: bool,
 ) -> None:
     """Write comments section in the IOS header file
     inputs:
@@ -4290,7 +4332,7 @@ def write_data(
     outputs:
         - Data values printed to open IOS header file, but nothing returned by the function
     """
-    # --------------
+
     channel_widths_all = {"Pressure": "{:>7}",
                           "Depth": "{:>6}",
                           "Temperature": "{:>8}",
@@ -4315,12 +4357,12 @@ def write_data(
         for cn, wd in channel_widths_available.items():
             if cn != "Observation_counts":
                 print_line += (
-                    wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
-                    + " "
+                        wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
+                        + " "
                 )
             else:
                 print_line += (
-                        wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
+                    wd.format(cast_data["cast" + str(cast_number)].loc[i, cn])
                 )  # Omit space after the last column, which is Observation_counts
         print(print_line)
     # ---------------
@@ -4456,6 +4498,81 @@ def write_data(
     return
 
 
+def main_header2(
+        dest_dir: str,
+        n_cast: int,
+        meta_dict: dict,
+        cast: dict,
+        cast_d_final: dict,
+        dict_recs_out: dict,
+        channel_names,
+        processing_report_name: str,
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None
+) -> str:
+    """
+    Main function for creating an IOS header file containing final processed RBR CTD data
+    inputs:
+        - dest_dir: working directory that output files are saved to
+        - n_cast: cast/event number
+        - meta_dict: dictionary containing metadata for the selected RBR cruise
+        - cast: dictionary containing the original raw data from both the upcast and
+        downcast
+        - cast_d_final: dictionary containing the final processed data, with conductivity
+        in units of S/m
+        -
+    outputs:
+        - absolute path of the output data file
+    """
+    path_slash_type = "/" if "/" in dest_dir else "\\"
+    f_name = dest_dir.split(path_slash_type)[-2]
+    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".CTD"
+    new_dir = os.path.join(dest_dir, f"CTD{path_slash_type}")
+    output = new_dir + f_output
+    if not os.path.exists(new_dir):
+        os.makedirs(new_dir)
+    # Start
+    # datetime object containing current date and time
+    now = datetime.now()
+
+    # dd/mm/YY H:M:S
+    dt_string = now.strftime("%Y/%m/%d %H:%M:%S.%f")[0:-4]
+
+    IOS_string = "*IOS HEADER VERSION 2.0      2020/03/01 2020/04/15 PYTHON"
+
+    orig_stdout = sys.stdout
+    file_handle = open(output, "wt")
+    try:
+        sys.stdout = file_handle
+        print("*" + dt_string)
+        print(IOS_string)
+        print()  # print("\n") pring("\n" * 40)
+        write_file(n_cast, cast, cast_d_final, meta_dict)
+        write_admin(metadata_dict=meta_dict)
+        write_location(cast_number=n_cast, metadata_dict=meta_dict)
+        write_instrument(metadata_dict=meta_dict)
+        write_history2(
+            dict_recs_out,
+            cast_number=n_cast,
+            metadata_dict=meta_dict,
+        )
+        write_comments(
+            processing_report_name, channel_names, processing_comments1, processing_comments2,
+            processing_comments3, processing_comments4, processing_comments5
+        )  # , metadata_dict=meta_data, cast_d=cast_d) have_fluor, have_oxy,
+        write_data(
+            cast_d_final, cast_number=n_cast, channel_names=channel_names
+        )  # , cast_d=cast_d) have_fluor, have_oxy,
+        sys.stdout.flush()  # Recommended by Tom
+    finally:
+        sys.stdout = orig_stdout
+
+    return os.path.abspath(output)
+
+
 def main_header(
         dest_dir: str,
         n_cast: int,
@@ -4475,11 +4592,11 @@ def main_header(
         cast_d_final: dict,
         channel_names,
         processing_report_name: str,
-        processing_comments1,
-        processing_comments2,
-        processing_comments3,
-        processing_comments4,
-        processing_comments5
+        processing_comments1=None,
+        processing_comments2=None,
+        processing_comments3=None,
+        processing_comments4=None,
+        processing_comments5=None
 ) -> str:
     """
     Main function for creating an IOS header file containing final processed RBR CTD data
@@ -4623,12 +4740,12 @@ def first_step(
      inputs:
         - dest_dir, year, cruise_number
         - data_file_type: 'rsk' for *.rsk files or 'excel' for *.xlsx type files
+        (use on .xlsx files exported from Ruskin)
         - skipcasts: number of casts to skip over in each data file (rsk or excel)
             when writing data to output format. Input format as either an integer
             or as a list-like object with one integer per excel file
             representing the number of initial casts to skip in each excel file.
-        - data_file_type: "rsk" for single or multiple rsk files, or "excel"
-        (use on .xlsx files exported from Ruskin)
+        - rsk_time1, rsk_time2:
         - left_lon, right_lon, bot_lat, top_lat: map extent for plotting cast locations
      Outputs:
         - None in terms of python objects, but data files and plots are saved
@@ -4657,6 +4774,12 @@ def first_step(
         dest_dir, year, cruise_number, input_ext="_CTD_DATA-6linehdr.csv"
     )
     return
+
+
+def add_recs_out(cast_d: dict):
+    return {
+        cast_num: cast_d[cast_num].shape[0] for cast_num in cast_d.keys()
+    }
 
 
 def second_step(
@@ -4707,6 +4830,9 @@ def second_step(
     # cast, cast_d, cast_u = 0, 0, 0
     # cast_pc, cast_d_pc, cast_u_pc = 0, 0, 0
 
+    # Initialize dictionary to hold counts of number of observations for write_history()
+    dict_recs_out = {}
+
     if verbose:
         print("Checking need for zero-order hold correction...")
     # Check pressure channel for zero order holds
@@ -4735,6 +4861,8 @@ def second_step(
         year, cruise_number, dest_dir, input_ext
     )
 
+    dict_recs_out['ZEROORDER'] = add_recs_out(cast_d)
+
     for cast_i in cast_d.keys():
         have_oxy = True if "Oxygen" in cast_d[cast_i].columns else False
         have_fluor = True if "Fluorescence" in cast_d[cast_i].columns else False
@@ -4749,6 +4877,8 @@ def second_step(
         )
         if verbose:
             print("Time offset(s) corrected")
+
+        dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t)
     else:
         cast_correct_t, cast_d_correct_t, cast_u_correct_t = cast, cast_d, cast_u
 
@@ -4764,6 +4894,8 @@ def second_step(
                 pd_correction_value,
                 sep="\n",
             )
+        # Add recs out number
+        dict_recs_out['CALIB'] = add_recs_out(cast_d_pc)
     else:
         cast_pc, cast_d_pc, cast_u_pc = cast_correct_t, cast_d_correct_t, cast_u_correct_t
 
@@ -4783,6 +4915,8 @@ def second_step(
     )
 
     plot_clip(cast_d_clip, cast_d_pc, dest_dir)
+
+    dict_recs_out['CLIP'] = add_recs_out(cast_d_clip)
 
     if verbose:
         print("Casts clipped")
@@ -4807,6 +4941,8 @@ def second_step(
         cast_d_filtered, cast_u_filtered, cast_d_clip, cast_u_clip, dest_dir, have_fluor
     )
 
+    dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered)
+
     if verbose:
         print(
             f"Casts filtered, assuming a sample rate of {sample_rate} records per second"
@@ -4825,6 +4961,9 @@ def second_step(
         cast_d_shift_c, cast_u_shift_c, cast_d_filtered, cast_u_filtered, dest_dir
     )
 
+    # Cannot have two dict keys with same name SHIFT...
+    dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c)
+
     if verbose:
         print(f"Conductivity shifted {shift_recs_conductivity} scans")
 
@@ -4841,6 +4980,8 @@ def second_step(
             cast_d_shift_o, cast_u_shift_o, cast_d_shift_c, cast_u_shift_c, dest_dir
         )
 
+        dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o)
+
         if verbose:
             print(f"Oxygen shifted {shift_recs_oxygen} scans")
 
@@ -4848,6 +4989,8 @@ def second_step(
         cast_d_o_conc, cast_u_o_conc = DERIVE_OXYGEN_CONCENTRATION(
             cast_d_shift_o, cast_u_shift_o, metadata_dict
         )
+
+        dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc)
 
         if verbose:
             print("Oxygen concentration derived from oxygen saturation")
@@ -4861,6 +5004,8 @@ def second_step(
         cast_d_o_conc, cast_u_o_conc, metadata_dict=metadata_dict
     )
 
+    dict_recs_out['DELETE_PRESSURE_REVERSAL'] = add_recs_out(cast_d_wakeeffect)
+
     if verbose:
         print("Deleted pressure change reversals")
 
@@ -4869,8 +5014,10 @@ def second_step(
 
     # Average the data into 1-dbar bins
     cast_d_binned, cast_u_binned = BINAVE(
-        cast_d_wakeeffect, cast_u_wakeeffect, metadata_dict=metadata_dict
+        cast_d_wakeeffect, metadata_dict=metadata_dict
     )
+
+    dict_recs_out['BINAVE'] = add_recs_out(cast_d_binned)
 
     if verbose:
         print("Records averaged into equal-width pressure bins")
@@ -4882,6 +5029,8 @@ def second_step(
         cast_d_dropvars = DROP_SELECT_VARS(
             dest_dir, cast_d_binned, drop_vars_file, metadata_dict
         )
+        dict_recs_out['DROP_SELECT_VARS'] = add_recs_out(cast_d_dropvars)
+
         if verbose:
             print("Select variables dropped from casts specified in", drop_vars_file)
     else:
@@ -4889,6 +5038,8 @@ def second_step(
 
     # Final edits: change conductivity units
     cast_d_final = FINAL_EDIT(cast_d_dropvars, metadata_dict)
+
+    dict_recs_out['FINALEDIT'] = add_recs_out(cast_d_final)
 
     if verbose:
         print("Final edit completed")
@@ -4912,26 +5063,28 @@ def second_step(
         # have_oxy = True if "Oxygen" in cast_d_final[f"cast{i}"].columns else False
         channel_names = cast_d_final[f"cast{i}"].columns
         # Call the main header creation function
-        main_header(
-            dest_dir,
-            i,
-            metadata_dict,
-            cast,
-            cast_d,
-            cast_d_correct_t,
-            cast_d_pc,
-            cast_d_clip,
-            cast_d_filtered,
-            cast_d_shift_c,
-            cast_d_shift_o,
-            cast_d_o_conc,
-            cast_d_wakeeffect,
-            cast_d_binned,
-            cast_d_dropvars,
-            cast_d_final,
-            channel_names,
-            processing_report_name,
-        )
+        # main_header(
+        #     dest_dir,
+        #     i,
+        #     metadata_dict,
+        #     cast,
+        #     cast_d,
+        #     cast_d_correct_t,
+        #     cast_d_pc,
+        #     cast_d_clip,
+        #     cast_d_filtered,
+        #     cast_d_shift_c,
+        #     cast_d_shift_o,
+        #     cast_d_o_conc,
+        #     cast_d_wakeeffect,
+        #     cast_d_binned,
+        #     cast_d_dropvars,
+        #     cast_d_final,
+        #     channel_names,
+        #     processing_report_name,
+        # )
+        main_header2(dest_dir, i, metadata_dict, cast, cast_d_final, dict_recs_out,
+                     channel_names, processing_report_name)
 
     if verbose:
         print("Header files produced")
