@@ -3259,9 +3259,12 @@ def BINAVE(
     # Iterate through all the casts
     for cast_i in var1.keys():
         start_d = np.floor(np.nanmin(var1[cast_i].Pressure.values))
+        # Round the the nearest half to get even intervals
+        start_d = np.round(start_d * 2) / 2
         # start_d = np.round(start_d)
         stop_d = np.ceil(np.nanmax(var1[cast_i].Pressure.values))
         # stop_d = np.round(stop_d)
+        stop_d = np.round(stop_d * 2) / 2
         new_press_d = np.arange(start_d - 0.5, stop_d + 1.5, interval)
         binned_d = pd.cut(var1[cast_i].Pressure, bins=new_press_d)
         obs_count_d = var1[cast_i].groupby(binned_d, observed=False).size()
