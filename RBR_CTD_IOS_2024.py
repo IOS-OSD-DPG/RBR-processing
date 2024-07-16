@@ -4776,10 +4776,16 @@ def first_step(
     return
 
 
-def add_recs_out(cast_d: dict):
-    return {
-        cast_num: cast_d[cast_num].shape[0] for cast_num in cast_d.keys()
-    }
+def add_recs_out(cast_d: dict, cast_u=None):
+    if cast_u is None:
+        return {
+            cast_num: cast_d[cast_num].shape[0] for cast_num in cast_d.keys()
+        }
+    else:
+        return {
+            cast_num: cast_d[cast_num].shape[0] + cast_u[cast_num].shape[0]
+            for cast_num in cast_d.keys()
+        }
 
 
 def second_step(
@@ -4861,7 +4867,7 @@ def second_step(
         year, cruise_number, dest_dir, input_ext
     )
 
-    dict_recs_out['ZEROORDER'] = add_recs_out(cast_d)
+    dict_recs_out['ZEROORDER'] = add_recs_out(cast_d, cast_u)
 
     for cast_i in cast_d.keys():
         have_oxy = True if "Oxygen" in cast_d[cast_i].columns else False
@@ -4878,7 +4884,7 @@ def second_step(
         if verbose:
             print("Time offset(s) corrected")
 
-        dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t)
+        dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t, cast_u_correct_t)
     else:
         cast_correct_t, cast_d_correct_t, cast_u_correct_t = cast, cast_d, cast_u
 
@@ -4895,7 +4901,7 @@ def second_step(
                 sep="\n",
             )
         # Add recs out number
-        dict_recs_out['CALIB'] = add_recs_out(cast_d_pc)
+        dict_recs_out['CALIB'] = add_recs_out(cast_d_pc, cast_u_pc)
     else:
         cast_pc, cast_d_pc, cast_u_pc = cast_correct_t, cast_d_correct_t, cast_u_correct_t
 
@@ -4916,7 +4922,7 @@ def second_step(
 
     plot_clip(cast_d_clip, cast_d_pc, dest_dir)
 
-    dict_recs_out['CLIP'] = add_recs_out(cast_d_clip)
+    dict_recs_out['CLIP'] = add_recs_out(cast_d_clip, cast_u_clip)
 
     if verbose:
         print("Casts clipped")
@@ -4941,7 +4947,7 @@ def second_step(
         cast_d_filtered, cast_u_filtered, cast_d_clip, cast_u_clip, dest_dir, have_fluor
     )
 
-    dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered)
+    dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered, cast_u_filtered)
 
     if verbose:
         print(
@@ -4962,7 +4968,7 @@ def second_step(
     )
 
     # Cannot have two dict keys with same name SHIFT...
-    dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c)
+    dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c, cast_u_shift_c)
 
     if verbose:
         print(f"Conductivity shifted {shift_recs_conductivity} scans")
@@ -4980,7 +4986,7 @@ def second_step(
             cast_d_shift_o, cast_u_shift_o, cast_d_shift_c, cast_u_shift_c, dest_dir
         )
 
-        dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o)
+        dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o, cast_u_shift_o)
 
         if verbose:
             print(f"Oxygen shifted {shift_recs_oxygen} scans")
@@ -4990,7 +4996,7 @@ def second_step(
             cast_d_shift_o, cast_u_shift_o, metadata_dict
         )
 
-        dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc)
+        dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc, cast_u_o_conc)
 
         if verbose:
             print("Oxygen concentration derived from oxygen saturation")
