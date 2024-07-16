@@ -3535,7 +3535,7 @@ def write_file(
         "Salinity": ("Salinity", "PSS-78", "%.04f", nan, 9, "F", "R4", 4),
         "Fluorescence": ("Fluorescence:URU", "mg/m^3", "%.03f", nan, 8, "F", "R4", 3),
         "Oxygen": (
-            "Oxygen:Dissolved:Saturation:Rinko",
+            "Oxygen:Dissolved:Saturation:RBR",
             "%",
             "%.04f",
             nan,
@@ -3546,7 +3546,7 @@ def write_file(
         ),
         "Oxygen_mL_L": ("Oxygen:Dissolved:Rinko", "mL/L", "%.04f", nan, 8, "F", "R4", 2),
         "Oxygen_umol_kg": (
-            "Oxygen:Dissolved:RBR",
+            "Oxygen:Dissolved:Rinko",
             "umol/kg",
             "%.04f",
             nan,
@@ -4231,15 +4231,15 @@ def write_comments(
                   "Oxygen_mL_L": ["---*--- ",
                                   "Oxygen: ",
                                   "Dissolv ",
-                                  "ed: RBR ",
-                                  "        ",
+                                  "ed:     ",
+                                  "Rinko   ",
                                   "        ",
                                   "------- "],
                   "Oxygen_umol_kg": ["---*--- ",
                                      "Oxygen: ",
                                      "Dissolv ",
-                                     "ed: RBR ",
-                                     "        ",
+                                     "ed:     ",
+                                     "Rinko   ",
                                      "        ",
                                      "------- "],
                   "Conductivity": ["----*---- ",
@@ -4529,7 +4529,7 @@ def main_header2(
     """
     path_slash_type = "/" if "/" in dest_dir else "\\"
     f_name = dest_dir.split(path_slash_type)[-2]
-    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".CTD"
+    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".ctd"
     new_dir = os.path.join(dest_dir, f"CTD{path_slash_type}")
     output = new_dir + f_output
     if not os.path.exists(new_dir):
@@ -4625,7 +4625,7 @@ def main_header(
     """
     path_slash_type = "/" if "/" in dest_dir else "\\"
     f_name = dest_dir.split(path_slash_type)[-2]
-    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".CTD"
+    f_output = f_name.split("_")[0] + "-" + f"{n_cast:04}" + ".ctd"
     new_dir = os.path.join(dest_dir, f"CTD{path_slash_type}")
     output = new_dir + f_output
     if not os.path.exists(new_dir):
