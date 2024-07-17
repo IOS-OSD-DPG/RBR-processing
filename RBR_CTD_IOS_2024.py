@@ -34,8 +34,6 @@ import warnings
 
 # import pandoc
 # import shutil
-
-#
 # import warnings
 # import itertools
 # from datetime import datetime, timezone
@@ -2284,6 +2282,68 @@ def CORRECT_TIME_OFFSET(
     metadata_dict["CORRECT_TIME_OFFSET_Time"] = datetime.now()
 
     return var1, var2, var3
+
+
+def formula_10(X: float, c: np.ndarray, nc: int):
+    """
+    Copied from IOS Shell
+
+          SUBROUTINE formula_10(X,c,nc,final_value)
+    C
+    C******************************************************************************
+    C
+    C  This routine copied from Numerical Recipes published by Cambridge University
+    C  Press (pages 137-138).
+    C
+    C  Purpose:  Given the NC coefficients of a polynomial of degree NC-1 as an
+    C            array C with C(1) being the constant term,  and given a value X,
+    C            this routine returns the polynomial evaluated at X as final_value.
+    C
+    C            final_value = c(1) + c(2)*X + c(3)*X**2 +...+ c(nc)*X**(nc-1)
+    C
+    C  NCoeff:   Variable
+    C
+    C  Version: 1.0
+    C  Date:    January 25, 1993
+    C
+    C            CHANGE LOG
+    C
+    C  Ver  |   Date    |    Name      | Description
+    C ------+-----------+--------------+--------------------------------------------
+    C  1.00   25-Jan-93   J. Linguanti
+    C
+    C*******************************************************************************
+    C
+    C  Input Value(s)
+    C  --------------
+    C    x,c,nc - see purpose above
+    C
+    C  Output value(s)
+    C  ---------------
+    C    final_value - result of polynomial
+    C
+    C*******************************************************************************
+
+      REAL*8  sum
+      REAL*4  X,final_value,c(1)
+      INTEGER nc,ic
+
+      sum = c(nc)
+      DO ic = nc-1,1,-1
+         sum =  sum*X + c(ic)
+      ENDDO
+      final_value = sum
+
+      RETURN
+      END
+
+    """
+
+    sum_c = c[nc - 1]  # Python indexing starts at zero not one like fortran
+    for ic in range(nc - 2, -1, -1):
+        sum_c = sum_c * X + c[ic]
+
+    return sum_c
 
 
 def CALIB(
