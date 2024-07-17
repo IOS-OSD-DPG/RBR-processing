@@ -30,6 +30,7 @@ import random
 # from ocean_data_parser.convert.oxygen import O2stoO2c
 from o2conversion import O2stoO2c
 from seawater import eos80
+import warnings
 
 # import pandoc
 # import shutil
