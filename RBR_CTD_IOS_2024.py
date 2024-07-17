@@ -5,7 +5,7 @@ about: This script is for processing RBR CTD data and producing .ctd files in IO
 
 Modified July 2021 - September 2021 by Samantha Huntington
 
-Modified Jan. 2023 - ___ by Hana Hourston @hhourston
+Modified Jan - May 2023 by Hana Hourston @hhourston
 
 Modified June 2024 by Samantha Huntington
 """
@@ -3870,10 +3870,39 @@ def write_history2(dict_recs_out: dict, cast_number: int, metadata_dict: dict):
     print("    $END")
     print(" $REMARKS")
 
-    list_number = len(metadata_dict["Processing_history"].split("|"))
+    processing_history = metadata_dict["Processing_history"].split("|")  # Returns list
+    i_next = -1  # Will need to skip lines around Remove
 
-    for i in range(list_number):
-        print("     " + metadata_dict["Processing_history"].split("|")[i])
+    for i in range(len(processing_history)):
+        if i_next > -1 and i < i_next:
+            continue
+        else:
+            line = processing_history[i]
+            # Only print the -CLIP_downcast line for the specific cast number, not all of them
+            if line.startswith('-CLIP'):
+                if line.startswith(f'-CLIP_downcast{cast_number}:'):
+                    print("     " + line)
+                elif line.startswith(f'-CLIP_upcast{cast_number}:'):
+                    print("     " + line)
+            # Only print the lines associated with the specific cast we are on, not all of them
+            elif line == '-Remove Channels:':
+                line_cast_number = processing_history[i + 1]
+                if line_cast_number == f' The following CHANNEL(S) were removed from cast {cast_number}:':
+                    print("     " + line)
+                counter = 0
+                line_next = line_cast_number
+                while not line_next.startswith('-'):
+                    if line_cast_number == f' The following CHANNEL(S) were removed from cast {cast_number}:':
+                        print("     " + line_next)
+                    counter += 1
+                    line_next = processing_history[i + 1 + counter]
+                    if counter > 20:  # Arbitrary large number of channels
+                        warnings.warn('Ending runaway while loop')
+                        break
+                # Identify next line to print since the rest of the Remove lines have already been printed
+                i_next = i + 1 + counter
+            else:
+                print("     " + line)
 
     print("$END")
     print()
@@ -4135,11 +4164,43 @@ def write_history(
     print("    $END")
     print(" $REMARKS")
 
-    list_number = len(metadata_dict["Processing_history"].split("|"))
-    for i in range(list_number):
-        print("     " + metadata_dict["Processing_history"].split("|")[i])
+    processing_history = metadata_dict["Processing_history"].split("|")  # Returns list
+    i_next = -1  # Will need to skip lines around Remove
+
+    for i in range(len(processing_history)):
+        if i_next > -1 and i < i_next:
+            continue
+        else:
+            line = processing_history[i]
+            # Only print the -CLIP_downcast line for the specific cast number, not all of them
+            if line.startswith('-CLIP'):
+                if line.startswith(f'-CLIP_downcast{cast_number}:'):
+                    print("     " + line)
+                elif line.startswith(f'-CLIP_upcast{cast_number}:'):
+                    print("     " + line)
+            # Only print the lines associated with the specific cast we are on, not all of them
+            elif line == '-Remove Channels:':
+                line_cast_number = processing_history[i + 1]
+                if line_cast_number == f' The following CHANNEL(S) were removed from cast {cast_number}:':
+                    print("     " + line)
+                counter = 0
+                line_next = line_cast_number
+                while not line_next.startswith('-'):
+                    if line_cast_number == f' The following CHANNEL(S) were removed from cast {cast_number}:':
+                        print("     " + line_next)
+                    counter += 1
+                    line_next = processing_history[i + 1 + counter]
+                    if counter > 20:  # Arbitrary large number of channels
+                        warnings.warn('Ending runaway while loop')
+                        break
+                # Identify next line to print since the rest of the Remove lines have already been printed
+                i_next = i + 1 + counter
+            else:
+                print("     " + line)
+
     print("$END")
     print()
+
     return
 
 
