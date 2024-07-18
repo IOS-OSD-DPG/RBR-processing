@@ -8,7 +8,8 @@ year = "2024"
 cruise_number = "017"
 # dest_dir = f"C:\\Users\\huntingtons\\Desktop\\RBR_Processing\\CURRENT_PROCESSING\\{year}-{cruise_number}\\Suggested\\"
 # dest_dir = "C:\\Users\\huntingtons\\Desktop\\RBR_Processing\\Github_June2024_test\\"
-dest_dir = 'C:\\Users\\hourstonh\\Documents\\ctd_processing\\RBR\\2024-017\\'
+# dest_dir = 'C:\\Users\\hourstonh\\Documents\\ctd_processing\\RBR\\2024-017\\'
+dest_dir = 'C:\\Users\\hourstonh\\RBR-processing\\examples\\'
 skipcasts = 0
 rsk_start_end_times_file = None
 rsk_time1, rsk_time2 = [None, None]
@@ -28,6 +29,7 @@ processing_comments2 = None  # format is "       " + "Your text here"
 processing_comments3 = None
 processing_comments4 = None
 processing_comments5 = None
+calib_param_file = dest_dir + '2024-017-calib_parameters_example.csv'
 
 # Global Variables are listed above already, no need to repeat here
 # Create meta data dict
@@ -85,7 +87,7 @@ cast, cast_d, cast_u = CREATE_CAST_VARIABLES(
 )
 
 # If zoh applied in first_corrections()
-dict_recs_out['ZEROORDER'] = add_recs_out(cast_d)
+dict_recs_out['ZEROORDER'] = add_recs_out(cast_d, cast_u)
 
 for cast_i in cast_d.keys():
     have_oxy = True if "Oxygen" in cast_d[cast_i].columns else False
@@ -108,7 +110,7 @@ if start_time_correction_file is not None:
     cast_correct_t, cast_d_correct_t, cast_u_correct_t = CORRECT_TIME_OFFSET(
         dest_dir, cast, cast_d, cast_u, meta_dict, start_time_correction_file
     )
-    dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t)
+    dict_recs_out['CORRECT_TIME_OFFSET'] = add_recs_out(cast_d_correct_t, cast_u_correct_t)
 
     if verbose:
         print("Time offset(s) corrected")
@@ -116,18 +118,15 @@ else:
     cast_correct_t, cast_d_correct_t, cast_u_correct_t = cast, cast_d, cast_u
 
 # correct pressure depth
-if pd_correction_value != 0:
+if calib_param_file is not None:
     cast_pc, cast_d_pc, cast_u_pc = CALIB(
         cast_correct_t, cast_d_correct_t, cast_u_correct_t, meta_dict,
-        pd_correction_value
-    )  # 0 if no neg pressures
-    dict_recs_out['CALIB'] = add_recs_out(cast_d_pc)
-
+        calib_param_file
+    )
+    dict_recs_out['CALIB'] = add_recs_out(cast_d_pc, cast_u_pc)
     if verbose:
         print(
-            "The following correction value has been applied to Pressure and Depth:",
-            pd_correction_value,
-            sep="\n",
+            "Correction values applied to the channels specified in", calib_param_file
         )
 else:
     cast_pc, cast_d_pc, cast_u_pc = cast_correct_t, cast_d_correct_t, cast_u_correct_t
@@ -140,7 +139,7 @@ cast_u_clip = CLIP_CAST(
     cast_u_pc, meta_dict, limit_pressure_change=-0.02, cast_direction="up"
 )
 
-dict_recs_out['CLIP'] = add_recs_out(cast_d_clip)
+dict_recs_out['CLIP'] = add_recs_out(cast_d_clip, cast_u_clip)
 
 plot_clip(cast_d_clip, cast_d_pc, dest_dir)
 
@@ -173,7 +172,7 @@ plot_filter(
     cast_d_filtered, cast_u_filtered, cast_d_clip, cast_u_clip, dest_dir, have_fluor
 )
 
-dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered)
+dict_recs_out['FILTER'] = add_recs_out(cast_d_filtered, cast_u_filtered)
 
 if verbose:
     print(
@@ -188,7 +187,7 @@ cast_d_shift_c, cast_u_shift_c = SHIFT_CONDUCTIVITY(
     shifted_scan_number=shift_recs_conductivity,
 )
 
-dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c)
+dict_recs_out['SHIFT_Conductivity'] = add_recs_out(cast_d_shift_c, cast_u_shift_c)
 
 plot_shift_c(
     cast_d_shift_c, cast_u_shift_c, cast_d_filtered, cast_u_filtered, dest_dir
@@ -207,7 +206,7 @@ if have_oxy:
         shifted_scan_number=shift_recs_oxygen,
     )
 
-    dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o)
+    dict_recs_out['SHIFT_Oxygen'] = add_recs_out(cast_d_shift_o, cast_u_shift_o)
 
     plot_shift_o(
         cast_d_shift_o, cast_u_shift_o, cast_d_shift_c, cast_u_shift_c, dest_dir
@@ -221,7 +220,7 @@ if have_oxy:
         cast_d_shift_o, cast_u_shift_o, meta_dict
     )
 
-    dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc)
+    dict_recs_out['DERIVE_OXYGEN_CONCENTRATION'] = add_recs_out(cast_d_o_conc, cast_u_o_conc)
 
     if verbose:
         print("Oxygen concentration derived from oxygen saturation")
