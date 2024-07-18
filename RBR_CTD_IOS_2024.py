@@ -996,7 +996,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     is_event = lambda name: name == "Event"
     is_date = lambda name: name == "Date"
     is_time = lambda name: name == "TIME:UTC"
-    is_velocity = lambda name: name=="velocity" in name.lower()
+    is_velocity = lambda name: "velocity" in name.lower()
 
     is_channel_functions = [
         is_conductivity,
