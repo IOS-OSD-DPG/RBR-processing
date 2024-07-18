@@ -256,6 +256,7 @@ def READ_RSK(
                 rsk.derivesalinity()
                 rsk.deriveseapressure()
                 rsk.derivedepth()
+                rsk.derivevelocity()
 
                 input_ext = "_CTD_DATA-6linehdr.csv"
                 print('Using original values')
@@ -265,6 +266,7 @@ def READ_RSK(
                 rsk.derivesalinity()
                 rsk.deriveseapressure()
                 rsk.derivedepth()
+                rsk.derivevelocity()
                 rsk.despike(channels="chlorophyll_a", windowLength=spk_window, action=fill_action)
                 meta_dict['DESPIKE_time'] = datetime.now()
                 meta_dict["Processing_history"] = (
@@ -296,6 +298,7 @@ def READ_RSK(
                 rsk.derivesalinity()
                 rsk.deriveseapressure()
                 rsk.derivedepth()
+                rsk.derivevelocity()
                 # correct the hold with an interpolated value
                 # this function will find all instances and replace them with an interpolated value
 
@@ -324,6 +327,7 @@ def READ_RSK(
                 rsk.derivesalinity()
                 rsk.deriveseapressure()
                 rsk.derivedepth()
+                rsk.derivevelocity()
 
                 rsk.correcthold(action=fill_action)
 
@@ -883,7 +887,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     ctd_data.rename(columns=column_names, inplace=True)  # remove column names
 
     # append header information into the empty lists
-    channel_list = ["Y", "Y", "N", "Y", "Y", "Y", "Y", "Y", "N", "Y", "Y", "Y"]
+    channel_list = ["Y", "Y", "N", "Y", "Y", "Y", "Y", "Y", "N", "Y", "Y", "Y", "N"]
     index_list = [
         "Conductivity",
         "Temperature",
@@ -897,6 +901,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         "Event_number",
         "Date",
         "TIME:UTC",
+        "Velocity",
     ]
     unit_list = [
         "mS/cm",
@@ -911,6 +916,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         "n/a",
         "n/a",
         "n/a",
+        "m/s",
     ]
     input_format_list = [
         "R4",
@@ -925,6 +931,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         "I4",
         "D:dd/mm/YYYY",
         "T:HH:MM:SS",
+        "F"
     ]
     output_format_list = [
         "R4:F11.4",
@@ -939,6 +946,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         "I:I4",
         "D:YYYY/mm/dd",
         "T:HH:MM:SS",
+        " "
     ]
     na_value_list = [
         "-99",
@@ -953,6 +961,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         "-99",
         "",
         "",
+        " "
     ]
 
     # # Need to add to this list of lists as more spellings come up from Ruskin
@@ -989,6 +998,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
     is_event = lambda name: name == "Event"
     is_date = lambda name: name == "Date"
     is_time = lambda name: name == "TIME:UTC"
+    is_velocity = lambda name: name=="velocity" in name.lower()
 
     is_channel_functions = [
         is_conductivity,
@@ -1003,6 +1013,7 @@ def ADD_6LINEHEADER_2(dest_dir: str, year: str, cruise_number: str, output_ext: 
         is_event,
         is_date,
         is_time,
+        is_velocity,
     ]
 
     # Create empty lists to add information of available channels to
