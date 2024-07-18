@@ -1,0 +1,18 @@
+Name,Value,,
+number_of_profiles,51,,* take the total if more than one rsk file - check code uses correct input
+Instrument_information,,,* use csv as input if more than one file and not consistent - check code uses correct input
+RSK_filename,232531_20240206_1745.rsk,,*potentially more than one filename - check code uses correct input
+Channels,,,"* If more than one rsk make sure the channels are consistent, otherwise enter from csv as a LIST "
+Channel_details,,,"*If more than one rsk file make sure this is consistent, otherwise enter from csv as a LIST"
+Data_description,CTD,,
+Final_file_type,ASCII,,
+Number_of_channels,,,
+Mission,2024-017,,*cruise #
+Agency,IOS,,
+Country,Canada,,
+Project,Clayoquot Weather Station Network - ACRDP,,From the cruise log or waterproperties
+Scientist,Cooper G.,,From the cruise log or waterproperties
+Platform,Doug Anderson,,From the cruise log or waterproperties
+Instrument_Model,RBRMaestro,,
+Serial_number,232531,,From the rsk file or the cruise log
+Instrument_type,RBR CTD,,

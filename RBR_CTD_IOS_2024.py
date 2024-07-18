@@ -34,8 +34,6 @@ import warnings
 
 # import pandoc
 # import shutil
-
-#
 # import warnings
 # import itertools
 # from datetime import datetime, timezone
@@ -2297,32 +2295,124 @@ def CORRECT_TIME_OFFSET(
     return var1, var2, var3
 
 
+def formula_10(X: float, c: np.ndarray, nc: int):
+    """
+    Copied from IOS Shell
+
+          SUBROUTINE formula_10(X,c,nc,final_value)
+    C
+    C******************************************************************************
+    C
+    C  This routine copied from Numerical Recipes published by Cambridge University
+    C  Press (pages 137-138).
+    C
+    C  Purpose:  Given the NC coefficients of a polynomial of degree NC-1 as an
+    C            array C with C(1) being the constant term,  and given a value X,
+    C            this routine returns the polynomial evaluated at X as final_value.
+    C
+    C            final_value = c(1) + c(2)*X + c(3)*X**2 +...+ c(nc)*X**(nc-1)
+    C
+    C  NCoeff:   Variable
+    C
+    C  Version: 1.0
+    C  Date:    January 25, 1993
+    C
+    C            CHANGE LOG
+    C
+    C  Ver  |   Date    |    Name      | Description
+    C ------+-----------+--------------+--------------------------------------------
+    C  1.00   25-Jan-93   J. Linguanti
+    C
+    C*******************************************************************************
+    C
+    C  Input Value(s)
+    C  --------------
+    C    x,c,nc - see purpose above
+    C
+    C  Output value(s)
+    C  ---------------
+    C    final_value - result of polynomial
+    C
+    C*******************************************************************************
+
+      REAL*8  sum
+      REAL*4  X,final_value,c(1)
+      INTEGER nc,ic
+
+      sum = c(nc)
+      DO ic = nc-1,1,-1
+         sum =  sum*X + c(ic)
+      ENDDO
+      final_value = sum
+
+      RETURN
+      END
+
+    """
+
+    sum_c = c[nc - 1]  # Python indexing starts at zero not one like fortran
+    for ic in range(nc - 2, -1, -1):
+        sum_c = sum_c * X + c[ic]
+
+    return sum_c
+
+
 def CALIB(
         var: dict,
         var_downcast: dict,
         var_upcast: dict,
         metadata_dict: dict,
-        pd_correction_value=0,
+        param_file,
 ) -> tuple:
     """
-    Correct pressure and depth data
+    Calibrate (correct) a channel (Pressure, Depth, Salinity, or Oxygen).
+    P, D, and S are corrected by a single constant, but the O correction is more complicated
     Inputs:
         - cast, downcast, upcast and metadata dictionaries
-        - correction_value: for pressure and depth data
+        - param_file: csv file containing correction factors for each channel to calibrate
     Outputs:
         - cast, downcast, upcast and metadata dictionaries after pressure correction
     """
+
+    # Open csv file containing the Channel names to calibrate and parameters to use
+    param_df = pd.read_csv(param_file)
+
+    # Only SBE's may get oxygen corrections
+    channel_info = {'Pressure': {'units': 'decibar', 'full_name': 'Pressure'},
+                    'Depth': {'units': 'meters', 'full_name': 'Depth'},
+                    'Salinity': {'units': 'PSS-78', 'full_name': 'Salinity:T0:C0'},
+                    'Oxygen_mL_L': {'units': 'mL/L', 'full_name': 'Oxygen:Dissolved:SBE'}}
+
     var1 = deepcopy(var)
     var2 = deepcopy(var_downcast)
     var3 = deepcopy(var_upcast)
 
-    for cast_i in var1.keys():
-        var1[cast_i].Pressure = var1[cast_i].Pressure + pd_correction_value
-        var1[cast_i].Depth = var1[cast_i].Depth + pd_correction_value
-        var2[cast_i].Pressure = var2[cast_i].Pressure + pd_correction_value
-        var2[cast_i].Depth = var2[cast_i].Depth + pd_correction_value
-        var3[cast_i].Pressure = var3[cast_i].Pressure + pd_correction_value
-        var3[cast_i].Depth = var3[cast_i].Depth + pd_correction_value
+    for k in range(len(param_df)):
+        channel_name = param_df.iloc[k, 0]
+        channel_params = param_df.iloc[k, 1:].to_numpy()
+        # # Make additional func since pd.DataFrame.apply only accepts one argument, not 3
+        # apply_func = lambda x: formula_10(x, c=channel_params, nc=len(channel_params))
+
+        print(channel_params)
+        for cast_i in var1.keys():
+            if channel_name in ['Pressure', 'Depth', 'Salinity', 'Oxygen_mL_L']:
+                var1[cast_i].loc[:, channel_name] = formula_10(
+                    var1[cast_i].loc[:, channel_name].to_numpy(), c=channel_params, nc=len(channel_params)
+                )
+                print(len(var2[cast_i].loc[:, channel_name]))
+                var2[cast_i].loc[:, channel_name] = formula_10(
+                    var2[cast_i].loc[:, channel_name].to_numpy(), c=channel_params, nc=len(channel_params)
+                )
+                print(len(var2[cast_i].loc[:, channel_name]))
+                print(len(var3[cast_i].loc[:, channel_name]))
+                var3[cast_i].loc[:, channel_name] = formula_10(
+                    var3[cast_i].loc[:, channel_name].to_numpy(), c=channel_params, nc=len(channel_params)
+                )
+                print(len(var3[cast_i].loc[:, channel_name]))
+            else:
+                raise ValueError(
+                    'Invalid channel name in csv file of calib parameters: ' + channel_name
+                )
 
     # check if a correction was done - need to see if this is the first addition of "processing history'
     if "Processing_history" not in metadata_dict.keys():
@@ -2331,10 +2421,25 @@ def CALIB(
     metadata_dict["Processing_history"] += (
         "-CALIB parameters:|"
         " Calibration type = Correct|"
+        " Mode: ONLY - calibration specs from Cal File only.|"
+        f" Calibration file = {param_file}|"
         " Calibrations applied:|"
-        f" Pressure (decibar) = {pd_correction_value}|"
-        f" Depth (meters) = {pd_correction_value}|"
+        " Ch Name                          Units    Fmla Coefficents|"
+        " -- ----------------------------- --------- --- -----------------------------|"
     )
+
+    for k in range(len(param_df)):
+        channel_name = param_df.iloc[k, 0]
+        channel_params = param_df.iloc[k, 1:].to_list()
+        Ch = '   '  # Channel number
+        Name = channel_info[channel_name]['full_name'].ljust(29)
+        Units = channel_info[channel_name]['units'].ljust(9)
+        Fmla = '10'.rjust(3)  # Number of the formula used
+        Coefficients = f' {channel_params[0]:.7E}  {channel_params[1]:.7E}'
+        metadata_dict['Processing_history'] += ' '.join([Ch, Name, Units, Fmla, Coefficients]) + '|'
+        # metadata_dict['Processing_history'] += (
+        #     f" {channel_name} ({channel_units[channel_name]}) = {channel_params}|"
+        # )
 
     metadata_dict["CALIB_Time"] = datetime.now()
 
@@ -4873,7 +4978,7 @@ def second_step(
         fill_type: str,
         rsk_time1=None,
         rsk_time2=None,
-        pd_correction_value=0,
+        calib_param_file=None,
         start_time_correction_file=None,
         drop_vars_file=None,
         window_width=6,  # sample_rate=8, time_constant=1 / 8,
@@ -4965,16 +5070,14 @@ def second_step(
         cast_correct_t, cast_d_correct_t, cast_u_correct_t = cast, cast_d, cast_u
 
     # Calibrate pressure and depth
-    if pd_correction_value != 0:
+    if calib_param_file is not None:
         cast_pc, cast_d_pc, cast_u_pc = CALIB(
             cast_correct_t, cast_d_correct_t, cast_u_correct_t, metadata_dict,
-            pd_correction_value
+            calib_param_file
         )  # 0 if no neg pressures
         if verbose:
             print(
-                "The following correction value has been applied to Pressure and Depth:",
-                pd_correction_value,
-                sep="\n",
+                "Correction values applied to the channels specified in", calib_param_file
             )
         # Add recs out number
         dict_recs_out['CALIB'] = add_recs_out(cast_d_pc, cast_u_pc)
@@ -5188,7 +5291,7 @@ def PROCESS_RBR(
         # sample_rate: int, time_constant: float,
         shift_recs_conductivity: int = -2,
         shift_recs_oxygen=None,
-        pd_correction_value=0,
+        calib_param_file=None,
         start_time_correction_file=None,
         drop_vars_file=None,
         rsk_time1=None,
@@ -5240,7 +5343,7 @@ def PROCESS_RBR(
         fill_type=zoh_fill_type,
         rsk_time1=rsk_time1,
         rsk_time2=rsk_time2,
-        pd_correction_value=pd_correction_value,
+        calib_param_file=calib_param_file,
         start_time_correction_file=start_time_correction_file,
         drop_vars_file=drop_vars_file,
         window_width=window_width,  # sample_rate, time_constant,
