@@ -3175,6 +3175,12 @@ def DELETE_PRESSURE_REVERSAL(
     var2 = deepcopy(var_upcast)
     for cast_i in var1.keys():
         press = var1[cast_i].Pressure.values
+        # go to 10db off the bottom
+        press_max = np.nanmax(press) - 10
+        var1[cast_i]['p_range'] = np.repeat('p_range', len(var1[cast_i]))
+        # get a subset of between 10m and 10 off the bottom
+        var1[cast_i]['p_range'] = np.where(var1[cast_i]['Pressure'].between(10, press_max), 'in_range', 'out_range')
+        subsetter = np.where((var1[cast_i]['p_range'] == 'in_range') & (var1[cast_i]['Velocity'] < 0.3))
         ref = press[0]
         inversions = np.diff(np.r_[press, press[-1]]) < 0  # a mask
         mask = np.zeros_like(inversions)
@@ -3183,10 +3189,17 @@ def DELETE_PRESSURE_REVERSAL(
                 ref = press[k]
                 cut = press[k + 1:] < ref
                 mask[k + 1:][cut] = True
+        # Now also mask the low descent rate between 10db and the 10 off the bottom
+        mask[subsetter] = True
         var1[cast_i][mask] = np.NaN
 
     for cast_i in var2.keys():
         press = var2[cast_i].Pressure.values
+        press_max = np.nanmax(press) - 10
+        var2[cast_i]['p_range'] = np.repeat('p_range', len(var2[cast_i]))
+        # get a subset of between 10m and 10 off the bottom
+        var2[cast_i]['p_range'] = np.where(var2[cast_i]['Pressure'].between(10, press_max), 'in_range', 'out_range')
+        subsetter = np.where((var2[cast_i]['p_range'] == 'in_range') & (var2[cast_i]['Velocity'] < 0.3))
         ref = press[0]
         inversions = np.diff(np.r_[press, press[-1]]) > 0
         mask = np.zeros_like(inversions)
@@ -3195,6 +3208,7 @@ def DELETE_PRESSURE_REVERSAL(
                 ref = press[k]
                 cut = press[k + 1:] > ref
                 mask[k + 1:][cut] = True
+        mask[subsetter] = True
         var2[cast_i][mask] = np.NaN
     metadata_dict["Processing_history"] += (
         "-DELETE_PRESSURE_REVERSAL parameters:|" " Remove pressure reversals|"
