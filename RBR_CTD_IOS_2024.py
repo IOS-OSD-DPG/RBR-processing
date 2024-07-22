@@ -3192,6 +3192,8 @@ def DELETE_PRESSURE_REVERSAL(
         # Now also mask the low descent rate between 10db and the 10 off the bottom
         mask[subsetter] = True
         var1[cast_i][mask] = np.NaN
+        var1[cast_i] = var1[cast_i].drop(
+            columns=['p_range', 'shift_p_up', 'shift_p_down', 'descent_rate', 'Velocity', ])
 
     for cast_i in var2.keys():
         press = var2[cast_i].Pressure.values
@@ -3210,6 +3212,8 @@ def DELETE_PRESSURE_REVERSAL(
                 mask[k + 1:][cut] = True
         mask[subsetter] = True
         var2[cast_i][mask] = np.NaN
+        var2[cast_i] = var2[cast_i].drop(
+            columns=['p_range', 'shift_p_up', 'shift_p_down', 'descent_rate', 'Velocity', ])
     metadata_dict["Processing_history"] += (
         "-DELETE_PRESSURE_REVERSAL parameters:|" " Remove pressure reversals|"
     )
