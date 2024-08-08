@@ -1,4 +1,6 @@
 # RBR CTD Processing
+**This repository is deprecated. For RBR data processing please use https://github.com/IOS-OSD-DPG/IOS-CTD-Batch-Processing**
+
 A python file containing code to process RBR data from a raw .rsk file <br>
 A Jupyter Notebook to call the functions, edit as neeeded, and save the processing steps for each cruise. <br>
 Example csv files to use along with the code. <br>
